@@ -47,5 +47,7 @@ typedef struct Parser {
     unsigned long long lastLiteralValue;
 } Parser;
 
+char* token_to_str(int token);
+char* current_token_str(Parser *p);
 int current_token(Parser *p);
 int next_token(Parser *p);

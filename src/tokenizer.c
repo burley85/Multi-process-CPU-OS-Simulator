@@ -1,7 +1,93 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+
 #include "tokenizer.h"
+
+char* token_to_str(int token){
+    switch(token){
+        case PLUS:
+            return "+";
+        case MINUS:
+            return "-";
+        case TIMES:
+            return "*";
+        case DIVIDE:
+            return "/";
+        case EQUALS:
+            return "=";
+        case LPAREN:
+            return "(";
+        case RPAREN:
+            return ")";
+        case JMP:
+            return "jmp";
+        case JO:
+            return "jo";
+        case JNO:
+            return "jno";
+        case JZ:
+            return "jz";
+        case JNZ:
+            return "jnz";
+        case JC:
+            return "jc";
+        case JNC:
+            return "jnc";
+        case JS:
+            return "js";
+        case JNS:
+            return "jns";
+        case RAX:
+            return "rax";
+        case RBX:
+            return "rbx";
+        case RCX:
+            return "rcx";
+        case RDX:
+            return "rdx";
+        case RSI:
+            return "rsi";
+        case RDI:
+            return "rdi";
+        case RBP:
+            return "rbp";
+        case RSP:
+            return "rsp";
+        case R8:
+            return "r8";
+        case R9:
+            return "r9";
+        case R10:
+            return "r10";
+        case R11:
+            return "r11";
+        case R12:
+            return "r12";
+        case R13:
+            return "r13";
+        case R14:
+            return "r14";
+        case R15:
+            return "r15";
+        case LITERAL:
+            return "literal";
+        case EOF:
+            return "EOF";
+        default:
+            return "ERROR";
+    }
+}
+
+char* current_token_str(Parser *p){
+    if(p->tokenType == LITERAL){
+        char* constLiteral = malloc(21);
+        sprintf(constLiteral, "%llu", p->lastLiteralValue);
+        return constLiteral;
+    }
+    else return token_to_str(p->tokenType);
+}
 
 int current_token(Parser *p){
     return p->tokenType;
@@ -12,7 +98,7 @@ int parse_jump_token(Parser *p){
     
     char token[5] = "j";
     if(p->isFile) fscanf(p->fileOrString, "%3s", token + 1);
-    else sscanf(p->fileOrString + p->position, "%3s", token + 1);
+    else sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
 
     for(int i = 0; i < 9; i++){
         if(strcmp(token, jump_keywords[i]) == 0){
@@ -28,11 +114,9 @@ int parse_register_token(Parser *p){
     
     char token[5] = "r";
     if(p->isFile) fscanf(p->fileOrString, "%3s", token + 1);
-    else sscanf(p->fileOrString + p->position, "%3s", token + 1);
+    else sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
 
-    printf("%s\n", token);
-
-    for(int i = 0; i < 9; i++){
+    for(int i = 0; i < 16; i++){
         if(strcmp(token, register_names[i]) == 0){
             if(!p->isFile) p->position += strlen(token);
             return RAX + i;
@@ -47,8 +131,12 @@ int next_token(Parser *p){
 
     int rval = 0;
     if(p->isFile) rval = fscanf(p->fileOrString, " %c", &c);
-    else rval = sscanf(p->fileOrString + p->position++, " %c", &c);
-
+    else{
+        rval = sscanf((char*) (p->fileOrString) + p->position++, "%c", &c);
+        while(isspace(c)){
+            rval = sscanf((char*) (p->fileOrString) + p->position++, "%c", &c);
+        }
+    }
     if(rval == EOF) {
         p->tokenType = EOF;
         return EOF;
@@ -92,7 +180,7 @@ int next_token(Parser *p){
             else{
                 p->position--;
                 int numRead = 0;
-                sscanf(p->fileOrString + p->position, "%llu%n", &(p->lastLiteralValue), &numRead);
+                sscanf((char*) (p->fileOrString) + p->position, "%llu%n", &(p->lastLiteralValue), &numRead);
                 p->position += numRead;
             }
             break;
