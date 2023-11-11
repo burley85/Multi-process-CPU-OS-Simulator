@@ -66,7 +66,7 @@ char* encode_arithmetic_instruction(Parser *p, int operand1, int operator){
         //Set next 4 bits to length of literal; the next 4 bits will be padding
         encoded_instruction[1] = min_length << 4;
         //Set next min_length bytes to the significant bytes of the literal
-        memcpy(encoded_instruction + 2, &(p->lastLiteralValue) + sizeof(p->lastLiteralValue) - min_length, min_length);
+        memcpy(encoded_instruction + 2, &(p->lastLiteralValue), min_length);
     }
     else{
         printf("ERROR: Expected register or literal, got %s\n", current_token_str(p));
@@ -75,7 +75,7 @@ char* encode_arithmetic_instruction(Parser *p, int operand1, int operator){
 }
 
 char* encode_load_instruction(Parser *p, int operand1){
-    int operand2 = current_token(p);
+    int operand2 = next_token(p);
     char* encoded_instruction = NULL;
 
     if(operand2 >= RAX && operand2 <= R15){
@@ -103,7 +103,7 @@ char* encode_load_instruction(Parser *p, int operand1){
         //Set next 4 bits to length of literal; the next 4 bits will be padding
         encoded_instruction[1] = min_length << 4;
         //Set next min_length bytes to the significant bytes of the literal
-        memcpy(encoded_instruction + 2, &(p->lastLiteralValue) + sizeof(p->lastLiteralValue) - min_length, min_length);
+        memcpy(encoded_instruction + 2, &(p->lastLiteralValue), min_length);
     }
     else{
         printf("ERROR: Expected register or literal, got %s\n", current_token_str(p));
@@ -175,16 +175,19 @@ char* encode_store_instruction(Parser *p){
     if(operand1 == LITERAL) encoded_instruction[0] += 1 << 3;
     //Set next bit to 1 if operand 2 is a literal
     if(operand2 == LITERAL) encoded_instruction[0] += 1 << 2;
-    //Set next 3 bits to operand 1 length
+    //Set next 3 bits to operand 1 length - 1
+    operand1Length--;
     memcpy_bits(encoded_instruction, 6, &operand1Length, 5, 3);
-    //Set the next 3 bits to operand 2 length
-    memcpy_bits(encoded_instruction + 1, 1, &operand2Length, 5, 3);    
+    operand1Length++;
+    //Set the next 3 bits to operand 2 length - 1
+    operand2Length--;
+    memcpy_bits(encoded_instruction + 1, 1, &operand2Length, 5, 3); 
+    operand2Length++;   
     //Set the next operand1Length bytes to the first operand encoding
     char* encoded_instruction_pos = encoded_instruction + 1;
     char encoded_instruction_bit = 4;
     if(operand1 == LITERAL){
-        char* literal_start_pos = ((char*) &operand1LiteralVal) + sizeof(operand1LiteralVal) - operand1Length;
-        memcpy_bits(encoded_instruction_pos, encoded_instruction_bit, literal_start_pos, 0, operand1Length * 8);
+        memcpy_bits(encoded_instruction_pos, encoded_instruction_bit, &operand1LiteralVal, 0, operand1Length * 8);
         encoded_instruction_pos += operand1Length;
     }  
     else{
@@ -195,8 +198,7 @@ char* encode_store_instruction(Parser *p){
     }
     //Set the next operand2Length bytes to the second operand encoding
     if(operand2 == LITERAL){
-        char* literal_start_pos = ((char*) &operand2LiteralVal) + sizeof(operand2LiteralVal) - operand2Length;
-        memcpy_bits(encoded_instruction_pos, encoded_instruction_bit, literal_start_pos, 0, operand2Length * 8);
+        memcpy_bits(encoded_instruction_pos, encoded_instruction_bit, &operand2LiteralVal, 0, operand2Length * 8);
     }  
     else{
         char register_encoding = encode_register(operand2);
@@ -220,7 +222,7 @@ char* encode_jump_instruction(Parser *p){
         //Set next 4 bits to length of literal
         encoded_instruction[0] += operandLength;
         //Set next operandLength bytes to the significant bytes of the literal
-        memcpy(encoded_instruction + 1, &(p->lastLiteralValue) + sizeof(p->lastLiteralValue) - operandLength, operandLength);
+        memcpy(encoded_instruction + 1, &(p->lastLiteralValue), operandLength);
     }
     else if(operand >= RAX && operand <= R15){
         encoded_instruction = malloc(2);
@@ -237,7 +239,6 @@ char* encode_jump_instruction(Parser *p){
 }
 
 char* encode_instruction(char *instruction) {
-    printf("Instruction: %s\n", instruction);
     // Find the operation and call the appropriate function
     Parser p;
     p.fileOrString = instruction;

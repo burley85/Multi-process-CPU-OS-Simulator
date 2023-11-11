@@ -47,7 +47,7 @@ They are encoded as follows:
     Operation (4 bits)
     Operand 1 (4 bits)
     Operand 2 type/length (4 bits):
-        0xxx: register--4 bits (XXX is ignored)
+        0000: register--4 bits
         0001: constant--8 bits
         0010: constant--16 bits
         0011: constant--24 bits

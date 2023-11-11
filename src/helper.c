@@ -40,7 +40,10 @@ void cpy_bit(char* dest, char dest_offset, char* src, char src_offset){
 //src is the address of the first byte to copy from
 //src_offset is the bit number to start copying from
 //num_bits is the number of bits to copy
-void memcpy_bits(char* dest, char dest_offset, char* src, char src_offset, int num_bits){
+void memcpy_bits(void* destVoid, char dest_offset, void* srcVoid, char src_offset, int num_bits){
+    char* dest = destVoid;
+    char* src = srcVoid;
+
     if(dest_offset > 7 || dest_offset < 0){
         printf("ERROR: Cannot copy to %d-th bit\n", dest_offset);
         return;
