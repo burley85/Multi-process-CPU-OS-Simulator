@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "cpu.h"
 #include "helper.h"
@@ -43,6 +44,10 @@ void dump_cpu(cpu cpu){
     printf("r13: %llu\n", cpu.r13);
     printf("r14: %llu\n", cpu.r14);
     printf("r15: %llu\n", cpu.r15);
+    printf("of: %d\n", cpu.of);
+    printf("sf: %d\n", cpu.sf);
+    printf("zf: %d\n", cpu.zf);
+    printf("cf: %d\n", cpu.cf);
     printf("\nmemory:\n");
     for(int i = 0; i < 64; i++){
         if(cpu.memory[i] != 0){
@@ -75,66 +80,104 @@ unsigned long long* decode_register(cpu* cpu, char register_encoding){
     }
 }
 
+void clear_flags(cpu* cpu){
+    cpu->of = false;
+    cpu->sf = false;
+    cpu->zf = false;
+    cpu->cf = false;
+}
+
+void execute_add_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
+    unsigned long long result = *operand1 + operand2;
+    
+    bool op1_sign = *operand1 >> 63;
+    bool op2_sign = operand2 >> 63;
+    bool result_sign = result >> 63;
+
+    cpu->of = (op1_sign == op2_sign) && (op1_sign != result_sign);
+    cpu->cf = result < *operand1;
+
+    *operand1 = result;
+}
+
+void execute_subtraction_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
+    unsigned long long result = *operand1 - operand2;
+    
+    bool op1_sign = *operand1 >> 63;
+    bool op2_sign = operand2 >> 63;
+    bool result_sign = result >> 63;
+
+    cpu->of = (op1_sign != op2_sign) && (op1_sign != result_sign);
+    cpu->cf = result > *operand1;
+
+    *operand1 = result;
+}
+
+void execute_multiplication_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
+    long double unsigned_result = *operand1 * operand2;
+    long double signed_result = (long long) *operand1 * (long long) operand2;
+
+    cpu->of = signed_result < INT64_MIN || signed_result > INT64_MAX;
+    cpu->cf = unsigned_result > UINT64_MAX;
+
+    *operand1 = *operand1 * operand2;
+}
+
+void execute_division_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
+    *operand1 = *operand1 / operand2; //OF and CF are not set by division
+}
+
+void execute_assignment_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
+    *operand1 = operand2; //OF and CF are not set by assignment
+}
+
+void execute_load_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
+    memcpy(operand1, &cpu->memory[operand2], 8); //OF and CF are not set by load instructions
+}
+
 void execute_arithmetic_instruction(cpu* cpu, char* instruction){
     char operand1_encoding = instruction[0] & 0b00001111;
     unsigned long long *operand1 = decode_register(cpu, operand1_encoding);
+    unsigned long long operand2 = 0;
 
     if((instruction[1] & 0b11110000) == 0){
         //Operand 2 is a register
         char operand2_encoding = instruction[1] & 0b00001111;
-        unsigned long long *operand2 = decode_register(cpu, operand2_encoding);
-
-        char operation = instruction[0] >> 4;
-        switch(operation){
-            case 0b0000:
-                *operand1 += *operand2;
-                return;
-            case 0b0001:
-                *operand1 -= *operand2;
-                return;
-            case 0b0010:
-                *operand1 *= *operand2;
-                return;
-            case 0b0011:
-                *operand1 /= *operand2;
-                return;
-            case 0b0100:
-                *operand1 = *operand2;
-                return;
-            case 0b0101:
-                memcpy(operand1, cpu->memory + *operand2, 8);
-                return;
-        }
+        unsigned long long *temp = decode_register(cpu, operand2_encoding);
+        operand2 = *temp;
+    } else {
+        //Operand 2 is a literal
+        char operand2_length = (instruction[1] & 0b11110000) >> 4;
+        operand2_length = operand2_length > 8 ? 8 : operand2_length;
+        memcpy(&operand2, instruction + 2, operand2_length);
     }
 
-    //Operand 2 is a literal
-    char operand2_length = (instruction[1] & 0b11110000) >> 4;
-    operand2_length = operand2_length > 8 ? 8 : operand2_length;
-    unsigned long long operand2 = 0;
-    memcpy(&operand2, instruction + 2, operand2_length);
     char operation = instruction[0] >> 4;
-        switch(operation){
-            case 0b0000:
-                *operand1 += operand2;
-                return;
-            case 0b0001:
-                *operand1 -= operand2;
-                return;
-            case 0b0010:
-                *operand1 *= operand2;
-                return;
-            case 0b0011:
-                *operand1 /= operand2;
-                return;
-            case 0b0100:
-                *operand1 = operand2;
-                dump_cpu(*cpu);
-                return;
-            case 0b0101:
-                memcpy(operand1, cpu->memory +  operand2, 8);
-                return;
-        }
 
+    clear_flags(cpu);
+
+    switch(operation){
+        case 0b0000:
+            execute_add_instruction(cpu, operand1, operand2);
+            break;
+        case 0b0001:
+            execute_subtraction_instruction(cpu, operand1, operand2);
+            break;
+        case 0b0010:
+            execute_multiplication_instruction(cpu, operand1, operand2);
+            break;
+        case 0b0011:
+            execute_division_instruction(cpu, operand1, operand2);
+            break;
+        case 0b0100:
+            execute_assignment_instruction(cpu, operand1, operand2);
+            break;
+        case 0b0101:
+            execute_load_instruction(cpu, operand1, operand2);
+            break;
+    }
+    cpu->zf = *operand1 == 0;
+    cpu->sf = *operand1 >> 63;
 }
 
 void execute_store_instruction(cpu* cpu, char* instruction){

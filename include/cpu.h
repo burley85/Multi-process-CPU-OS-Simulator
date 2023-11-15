@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 typedef struct cpu{
     unsigned long long rax;
     unsigned long long rbx;
@@ -15,6 +17,14 @@ typedef struct cpu{
     unsigned long long r13;
     unsigned long long r14;
     unsigned long long r15;
+
+    bool of;
+    bool sf;
+    bool zf;
+    bool cf;
+
+    unsigned long long rip;
+
     char memory[64];
 } cpu;
 
