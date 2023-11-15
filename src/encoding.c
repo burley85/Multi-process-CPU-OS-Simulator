@@ -26,10 +26,11 @@ char encode_operator(int op){
 //Returns minimum number of bytes needed to store a literal
 char literal_length(unsigned long long literal){
     char length = 0;
-    while(literal > 0){
+    do{
         literal >>= 8;
         length++;
-    }
+    } while(literal > 0);
+
     if(length > 8){
         printf("ERROR: %llu is too large to store in a literal\n", literal);
         return -1;
