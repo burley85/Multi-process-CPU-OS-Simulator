@@ -38,13 +38,14 @@ char literal_length(unsigned long long literal){
     return length;
 }
 
-char* encode_arithmetic_instruction(Parser *p, int operand1, int operator){
+char* encode_arithmetic_instruction(Parser *p, int operand1, int operator, int* encoding_length){
     int operand2 = p->tokenType;
     char* encoded_instruction = NULL;
 
     if(operand2 >= RAX && operand2 <= R15){
         //Instruction encoding will be 2 bytes
         encoded_instruction = malloc(2);
+        *encoding_length = 2;
         //Set first 4 bits to the encoded operator
         encoded_instruction[0] = encode_operator(operator) << 4;
         //Set next 4 bits to the encoded register
@@ -60,6 +61,7 @@ char* encode_arithmetic_instruction(Parser *p, int operand1, int operator){
         if(min_length == -1) return NULL;
         //Instruction encoding will be 2 + min_length bytes
         encoded_instruction = malloc(2 + min_length);
+        *encoding_length = 2 + min_length;
         //Set first 4 bits to the encoded operator
         encoded_instruction[0] = encode_operator(operator) << 4;
         //Set next 4 bits to the encoded register
@@ -75,13 +77,14 @@ char* encode_arithmetic_instruction(Parser *p, int operand1, int operator){
     return encoded_instruction;
 }
 
-char* encode_load_instruction(Parser *p, int operand1){
+char* encode_load_instruction(Parser *p, int operand1, int* encoding_length){
     int operand2 = next_token(p);
     char* encoded_instruction = NULL;
 
     if(operand2 >= RAX && operand2 <= R15){
         //Instruction encoding will be 2 bytes
         encoded_instruction = malloc(2);
+        *encoding_length = 2;
         //Set first 4 bits to the load operation encoding
         encoded_instruction[0] = 0b0101 << 4;
         //Set next 4 bits to the encoded register
@@ -97,6 +100,7 @@ char* encode_load_instruction(Parser *p, int operand1){
         if(min_length == -1) return NULL;
         //Instruction encoding will be 2 + min_length bytes
         encoded_instruction = malloc(2 + min_length);
+        *encoding_length = 2 + min_length;
         //Set first 4 bits to the load operation encoding
         encoded_instruction[0] = 0b0101 << 4;
         //Set next 4 bits to the encoded register
@@ -112,7 +116,7 @@ char* encode_load_instruction(Parser *p, int operand1){
     return encoded_instruction;
 }
 
-char* encode_store_instruction(Parser *p){
+char* encode_store_instruction(Parser *p, int* encoding_length){
     //Operand 1
     int operand1 = next_token(p);
     unsigned long long operand1LiteralVal;
@@ -148,6 +152,8 @@ char* encode_store_instruction(Parser *p){
         operand2LiteralVal = p->lastLiteralValue;
         operand2Length = literal_length(operand2LiteralVal);
     }
+    //Set encoding_length
+    *encoding_length = 2 + operand1Length + operand2Length;
 
     //Both operands are registers
     if(operand1 != LITERAL && operand2 != LITERAL){
@@ -208,7 +214,7 @@ char* encode_store_instruction(Parser *p){
     return encoded_instruction;
 }   
 
-char* encode_jump_instruction(Parser *p){
+char* encode_jump_instruction(Parser *p, int* encoding_length){
     int jump_token = p->tokenType;
     int operand = next_token(p);
     char* encoded_instruction = NULL;
@@ -218,6 +224,7 @@ char* encode_jump_instruction(Parser *p){
         if(operandLength == -1) return NULL;
         //Instruction encoding will be 1 + operandLength bytes
         encoded_instruction = malloc(1 + operandLength);
+        *encoding_length = 1 + operandLength;
         //Set first 4 bits to the jump operation encoding
         encoded_instruction[0] = encode_operator(jump_token) << 4;
         //Set next 4 bits to length of literal
@@ -227,6 +234,7 @@ char* encode_jump_instruction(Parser *p){
     }
     else if(operand >= RAX && operand <= R15){
         encoded_instruction = malloc(2);
+        *encoding_length = 2;
         //Set first 4 bits to the jump operation 
         encoded_instruction[0] = encode_operator(jump_token) << 4;
         //Leave the last 4 bits as 0000 to indicate that operand is a register
@@ -239,7 +247,7 @@ char* encode_jump_instruction(Parser *p){
     }
 }
 
-char* encode_instruction(char *instruction) {
+char* encode_instruction(char *instruction, int* encoding_length) {
     // Find the operation and call the appropriate function
     Parser p;
     p.fileOrString = instruction;
@@ -249,17 +257,18 @@ char* encode_instruction(char *instruction) {
     int token = next_token(&p);
 
     if(token == EOF) return NULL;
-    if(token == LPAREN) return encode_store_instruction(&p);
-    if(token >= JMP && token <= JNS) return encode_jump_instruction(&p);
+    if(token == LPAREN) return encode_store_instruction(&p, encoding_length);
+    if(token >= JMP && token <= JNS) return encode_jump_instruction(&p, encoding_length);
     if(token >= RAX && token <= R15){
         int reg = token;
         int token1 = next_token(&p);
         int token2 = next_token(&p);
-        if(token1 == EQUALS && token2 == LPAREN) return encode_load_instruction(&p, reg);
-        else return encode_arithmetic_instruction(&p, reg, token1);
+        if(token1 == EQUALS && token2 == LPAREN) return encode_load_instruction(&p, reg, encoding_length);
+        else return encode_arithmetic_instruction(&p, reg, token1, encoding_length);
     }
     else{
         printf("ERROR: Expected register, jump, or LPAREN, got %s\n", current_token_str(&p));
         return NULL;
     }
 }   
+
