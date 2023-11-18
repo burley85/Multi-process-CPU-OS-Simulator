@@ -23,6 +23,11 @@ cpu init_cpu(){
     c.r13 = 0;
     c.r14 = 0;
     c.r15 = 0;
+    c.of = false;
+    c.sf = false;
+    c.zf = false;
+    c.cf = false;
+    c.rip = 0;
     memset(c.memory, 0, 64);
     return c;
 }
@@ -48,6 +53,7 @@ void dump_cpu(cpu cpu){
     printf("sf: %d\n", cpu.sf);
     printf("zf: %d\n", cpu.zf);
     printf("cf: %d\n", cpu.cf);
+    printf("rip: 0x%llx\n", cpu.rip);
     printf("\nmemory:\n");
     for(int i = 0; i < 64; i++){
         if(cpu.memory[i] != 0){
@@ -135,10 +141,11 @@ void execute_load_instruction(cpu* cpu, unsigned long long *operand1, unsigned l
     memcpy(operand1, &cpu->memory[operand2], 8); //OF and CF are not set by load instructions
 }
 
-void execute_arithmetic_instruction(cpu* cpu, char* instruction){
+int execute_arithmetic_instruction(cpu* cpu, char* instruction){
     char operand1_encoding = instruction[0] & 0b00001111;
     unsigned long long *operand1 = decode_register(cpu, operand1_encoding);
     unsigned long long operand2 = 0;
+    int instruction_length = 2; //The length if operand 2 is a register
 
     if((instruction[1] & 0b11110000) == 0){
         //Operand 2 is a register
@@ -150,6 +157,7 @@ void execute_arithmetic_instruction(cpu* cpu, char* instruction){
         char operand2_length = (instruction[1] & 0b11110000) >> 4;
         operand2_length = operand2_length > 8 ? 8 : operand2_length;
         memcpy(&operand2, instruction + 2, operand2_length);
+        instruction_length += operand2_length;
     }
 
     char operation = instruction[0] >> 4;
@@ -178,13 +186,14 @@ void execute_arithmetic_instruction(cpu* cpu, char* instruction){
     }
     cpu->zf = *operand1 == 0;
     cpu->sf = *operand1 >> 63;
+    return instruction_length;
 }
 
-void execute_store_instruction(cpu* cpu, char* instruction){
+int execute_store_instruction(cpu* cpu, char* instruction){
     unsigned long long operand1 = 0;
     unsigned long long operand2 = 0;
     char operand1Length = 0;
-
+    int instructionLength = 2; //The length if both operands are registers
     if(instruction[0] & 0b00001100 == 0){
         //Both operands are registers
         char operand1_encoding = instruction[1] & 0b11110000 >> 4;
@@ -198,8 +207,7 @@ void execute_store_instruction(cpu* cpu, char* instruction){
             operand1Length = ((instruction[0] & 0b00000011) << 1) + ((instruction[1] & 0b10000000) >> 7);
             operand1Length = (operand1Length + 1) * 8;
             memcpy_bits(&operand1, 0, instruction + 1, 4, operand1Length);
-            printf("Operand 1: %llu\n", operand1);
-            printf("Operand 1 length: %d\n", operand1Length);
+            instructionLength += operand1Length / 8;
         }
         else{
             //Operand 1 is a register
@@ -212,6 +220,7 @@ void execute_store_instruction(cpu* cpu, char* instruction){
             operand2Length = (operand2Length + 1) * 8;
             if(operand1Length == 4) memcpy_bits(&operand2, 0, instruction + 2, 0, operand2Length);
             else memcpy_bits(&operand2, 0, instruction + 1 + (operand1Length / 8), 4, operand2Length);
+            instructionLength += operand2Length / 8;
         }
         else{
             //Operand 2 is a register
@@ -219,18 +228,20 @@ void execute_store_instruction(cpu* cpu, char* instruction){
             operand2 = *decode_register(cpu, operand2_encoding);
         }
     }
-    printf("Operand 1: %llu\n", operand1);
-    printf("Operand 2: %llu\n", operand2);
     memcpy(&cpu->memory[operand1], &operand2, 8);
+    return instructionLength;
 }
 
-void execute_jump_instruction(cpu* cpu, char* instruction){
+int execute_jump_instruction(cpu* cpu, char* instruction){
     printf("ERROR: Jump instruction not implemented\n");
+    return -1;
 }
 
 void execute_instruction(cpu* cpu, char* instruction){
     char operation = instruction[0] >> 4;
-    if(operation < 0b0110) execute_arithmetic_instruction(cpu, instruction);
-    else if(operation == 0b0110) execute_store_instruction(cpu, instruction);
-    else execute_jump_instruction(cpu, instruction);
+    int instruction_length = 0;
+    if(operation < 0b0110) instruction_length = execute_arithmetic_instruction(cpu, instruction);
+    else if(operation == 0b0110) instruction_length = execute_store_instruction(cpu, instruction);
+    else instruction_length = execute_jump_instruction(cpu, instruction);
+    cpu->rip += instruction_length;
 }
