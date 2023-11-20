@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "cpu.h"
 #include "helper.h"
+#include "encoding.h"
 
 cpu init_cpu(){
     cpu c;
@@ -244,4 +246,23 @@ void execute_instruction(cpu* cpu, char* instruction){
     else if(operation == 0b0110) instruction_length = execute_store_instruction(cpu, instruction);
     else instruction_length = execute_jump_instruction(cpu, instruction);
     cpu->rip += instruction_length;
+}
+
+void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
+    while(!feof(fp)){
+        char instruction[128] = "";
+        
+        fscanf(fp, "%128[^;]%*c", &instruction);
+        int encoding_length = 0;
+        char* encoding = encode_instruction(instruction, &encoding_length);
+        if(encoding != NULL){
+            memcpy(&cpu->memory[base], encoding, encoding_length);
+            base += encoding_length;
+            printf("%s -> ", instruction);
+            print_bin(encoding, encoding_length);
+            free(encoding);
+            scanf("%*c");
+        }
+    }
+    cpu->memory[base] = 0b11111111;
 }
