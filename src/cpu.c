@@ -235,8 +235,58 @@ int execute_store_instruction(cpu* cpu, char* instruction){
 }
 
 int execute_jump_instruction(cpu* cpu, char* instruction){
-    printf("ERROR: Jump instruction not implemented\n");
-    return -1;
+    char operation = instruction[0] >> 4;
+
+    char operand1Length = instruction[0] & 0b00001111;
+
+    bool condition_met = false;
+
+    switch(operation){
+        case 0b1000: //jo
+            if(cpu->of) condition_met = true;
+            break;
+        case 0b1001: //jno
+            if(!cpu->of) condition_met = true;
+            break;
+        case 0b1010: //jz
+            if(cpu->zf) condition_met = true;
+            break;
+        case 0b1011: //jnz
+            if(!cpu->zf) condition_met = true;
+            break;
+        case 0b1100: //jc
+            if(cpu->cf) condition_met = true;
+            break;
+        case 0b1101: //jnc
+            if(!cpu->cf) condition_met = true;
+            break;
+        case 0b1110: //js
+            if(cpu->sf) condition_met = true;
+            break;
+        case 0b1111: //jns
+            if(!cpu->sf) condition_met = true;
+            break;
+        case 0b0111: //Unconditional jump
+            condition_met = true;
+            break;
+    }
+
+    if(condition_met){
+        unsigned long long operand1;
+        if(operand1Length == 0){
+            //Operand 1 is a register
+            char operand1_encoding = instruction[1] >> 4;
+            operand1 = *decode_register(cpu, operand1_encoding);
+        }
+        else{
+            //Operand 1 is a literal
+            memcpy(&operand1, instruction + 1, operand1Length);
+        }
+        cpu->rip = operand1;
+    }
+
+    if(operand1Length == 0) return 2;
+    else return operand1Length + 1;    
 }
 
 void execute_instruction(cpu* cpu, char* instruction){

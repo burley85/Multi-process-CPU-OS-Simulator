@@ -98,7 +98,7 @@ It is encoded as follows:
         Operand 1 (4-64 bits)
         Operand 2 (4-64 bits)
 
-For 0110-1111, there is only one operand, which can be either a register or a literal constant.
+For 0111-1111, there is only one operand, which can be either a register or a literal constant.
 They are encoded as follows:
     Operation (4 bits)
     Operand type/length (4 bits):
@@ -110,7 +110,7 @@ They are encoded as follows:
         0101: constant--40 bits
         0110: constant--48 bits
         0111: constant--56 bits
-        1XXX: constant--64 bits
+        1000: constant--64 bits
     Operand (8-64 bits)
 
 **/
