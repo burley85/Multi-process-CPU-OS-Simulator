@@ -75,6 +75,8 @@ char* token_to_str(int token){
             return "literal";
         case EOF:
             return "EOF";
+        case LABEL:
+            return "label";
         default:
             return "ERROR";
     }
@@ -166,12 +168,13 @@ int next_token(Parser *p){
             break;
         case 'r':
             p->tokenType = parse_register_token(p);
+            if(p->tokenType == -1) p->tokenType = LABEL;
             break;
         case 'j':
             p->tokenType = parse_jump_token(p);
+            if(p->tokenType == -1) p->tokenType = LABEL;
             break;
-        default:
-            if(c < '0' || c > '9') break;
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
             p->tokenType = LITERAL;
             if(p->isFile){
                 ungetc(c, p->fileOrString);
@@ -184,6 +187,9 @@ int next_token(Parser *p){
                 p->position += numRead;
             }
             break;
+        default: 
+            p->tokenType = LABEL;
+
     }
     return p->tokenType;
 }

@@ -235,12 +235,11 @@ int execute_store_instruction(cpu* cpu, char* instruction){
 }
 
 int execute_jump_instruction(cpu* cpu, char* instruction){
-    char operation = instruction[0] >> 4;
+    unsigned char operation = (unsigned char) instruction[0] >> 4;
 
     char operand1Length = instruction[0] & 0b00001111;
 
     bool condition_met = false;
-
     switch(operation){
         case 0b1000: //jo
             if(cpu->of) condition_met = true;
@@ -283,6 +282,8 @@ int execute_jump_instruction(cpu* cpu, char* instruction){
             memcpy(&operand1, instruction + 1, operand1Length);
         }
         cpu->rip = operand1;
+        printf("jumping to %ld\n", cpu->rip);
+        return 0; 
     }
 
     if(operand1Length == 0) return 2;
@@ -290,7 +291,7 @@ int execute_jump_instruction(cpu* cpu, char* instruction){
 }
 
 void execute_instruction(cpu* cpu, char* instruction){
-    char operation = instruction[0] >> 4;
+    unsigned char operation = (unsigned char) instruction[0] >> 4;
     int instruction_length = 0;
     if(operation < 0b0110) instruction_length = execute_arithmetic_instruction(cpu, instruction);
     else if(operation == 0b0110) instruction_length = execute_store_instruction(cpu, instruction);
@@ -298,20 +299,73 @@ void execute_instruction(cpu* cpu, char* instruction){
     cpu->rip += instruction_length;
 }
 
+char* labels[128];
+unsigned long long label_addresses[128];
+int label_count = 0;
+
 void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
+    //Initial pass to look for labels and find their addresses
+    unsigned long long address = base;
     while(!feof(fp)){
         char instruction[128] = "";
-        
-        fscanf(fp, "%128[^;]%*c", &instruction);
+        char terminator;
+        fscanf(fp, " %128[^;:]%c", &instruction, &terminator);
+        //Check if the instruction is a label (next character is a colon)
+        if(terminator == ':'){
+            if(strlen(instruction) == 0){
+                printf("ERROR: Label cannot be empty\n");
+                return;
+            }
+            char* label = malloc(strlen(instruction) + 1);
+            strcpy(label, instruction);
+            //Get rid of whitespace at the end of the label
+            while(label[strlen(label) - 1] == ' ' || label[strlen(label) - 1] == '\t') label[strlen(label) - 1] = '\0';
+            //Add the label to the symbol table
+            labels[label_count] = label;
+            label_addresses[label_count] = address;
+            label_count++;
+        }
+        else{
+            int encoding_length;
+            char* encoding = encode_instruction(instruction, &encoding_length);
+            address += encoding_length;
+            free(encoding);
+        }
+
+    }
+
+    fseek(fp, 0, SEEK_SET);
+    while(!feof(fp)){
+        char instruction[128] = "";
+        char terminator;
+        fscanf(fp, " %128[^;:]%c", &instruction, &terminator);
+        if(terminator == ':') continue;
+
         int encoding_length = 0;
+
         char* encoding = encode_instruction(instruction, &encoding_length);
         if(encoding != NULL){
+            //If instruction is a jump, replace the 8 0 bytes with the address of the label
+            if((unsigned char) encoding[0] >> 4 > 0b0110){
+                dump_cpu(*cpu);
+                //Find the label
+                char label_location[128] = "";
+                sscanf(instruction, "%*s %s:", label_location);
+                int i;
+                for(i = 0; i < label_count; i++){
+                    if(strcmp(labels[i], label_location) == 0){
+                        memcpy(encoding + 1, &label_addresses[i], 8);
+                        break;
+                    }
+                }
+                if(i == label_count){
+                    printf("ERROR: Label %s not found\n", label_location);
+                    return;
+                }
+            }
             memcpy(&cpu->memory[base], encoding, encoding_length);
             base += encoding_length;
-            printf("%s -> ", instruction);
-            print_bin(encoding, encoding_length);
             free(encoding);
-            scanf("%*c");
         }
     }
     cpu->memory[base] = 0b11111111;

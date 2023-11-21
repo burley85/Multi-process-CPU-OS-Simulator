@@ -218,7 +218,18 @@ char* encode_jump_instruction(Parser *p, int* encoding_length){
     int jump_token = p->tokenType;
     int operand = next_token(p);
     char* encoded_instruction = NULL;
-    if(operand == LITERAL){
+    if(operand == LABEL){
+        //Instruction encoding will be 9 bytes
+        encoded_instruction = malloc(9);
+        *encoding_length = 9;
+        //Set first 4 bits to the jump operation encoding
+        encoded_instruction[0] = encode_operator(jump_token) << 4;
+        //Set next 4 bits to 1000 to indicate that operand is a 64 bit literal
+        encoded_instruction[0] += 0b1000;
+        //Set next 8 bytes to 0, which will be replaced with the address of the label
+        memset(encoded_instruction + 1, 0, 8);
+    }
+    else if(operand == LITERAL){
         unsigned long long operandLiteralVal = p->lastLiteralValue;
         char operandLength = literal_length(operandLiteralVal);
         if(operandLength == -1) return NULL;
@@ -245,6 +256,7 @@ char* encode_jump_instruction(Parser *p, int* encoding_length){
         printf("ERROR: Expected register or literal, got %s\n", current_token_str(p));
         return NULL;
     }
+    return encoded_instruction;
 }
 
 char* encode_instruction(char *instruction, int* encoding_length) {
@@ -266,9 +278,9 @@ char* encode_instruction(char *instruction, int* encoding_length) {
         if(token1 == EQUALS && token2 == LPAREN) return encode_load_instruction(&p, reg, encoding_length);
         else return encode_arithmetic_instruction(&p, reg, token1, encoding_length);
     }
-    else{
-        printf("ERROR: Expected register, jump, or LPAREN, got %s\n", current_token_str(&p));
-        return NULL;
+    else if(token != LABEL){
+        printf("ERROR: Expected register, jump, label, or LPAREN, got %s\n", current_token_str(&p));
     }
+    return NULL;
 }   
 

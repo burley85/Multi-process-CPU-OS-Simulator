@@ -37,6 +37,7 @@
 #define R15 31
 
 #define LITERAL 32
+#define LABEL 33
 
 
 typedef struct Parser {
