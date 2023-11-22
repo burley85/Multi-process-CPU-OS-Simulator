@@ -31,6 +31,7 @@ cpu init_cpu(){
     c.cf = false;
     c.rip = 0;
     memset(c.memory, 0, 64);
+    c.clock_cycles = 0;
     return c;
 }
 
@@ -63,7 +64,52 @@ void dump_cpu(cpu cpu){
             print_bin(&cpu.memory[i], 1);
         }
     }
+    printf("clock: %llu\n", cpu.clock_cycles);
     printf("\n");
+}
+
+#define CLOCK_CYCLES_PER_READ 12
+#define CLOCK_CYCLES_PER_WRITE 12
+#define CLOCK_CYCLES_PER_ADD 2
+#define CLOCK_CYCLES_PER_SUBTRACT 2
+#define CLOCK_CYCLES_PER_MULTIPLY 4
+#define CLOCK_CYCLES_PER_DIVIDE 8
+#define CLOCK_CYCLES_PER_ASSIGNMENT 1
+#define CLOCK_CYCLES_PER_FLAG_CHECK 1
+
+char* read_memory(cpu* cpu, unsigned long long address){
+    cpu->clock_cycles += CLOCK_CYCLES_PER_READ;
+    return &cpu->memory[address];
+}
+
+void write_memory(cpu* cpu, unsigned long long address, char* value, int length){
+    cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
+    memcpy(&cpu->memory[address], value, length);
+}
+
+unsigned long long add(cpu* cpu, unsigned long long operand1, unsigned long long operand2){
+    cpu->clock_cycles += CLOCK_CYCLES_PER_ADD;
+    return operand1 + operand2;
+}
+
+unsigned long long subtract(cpu* cpu, unsigned long long operand1, unsigned long long operand2){
+    cpu->clock_cycles += CLOCK_CYCLES_PER_SUBTRACT;
+    return operand1 - operand2;
+}
+
+unsigned long long multiply(cpu* cpu, unsigned long long operand1, unsigned long long operand2){
+    cpu->clock_cycles += CLOCK_CYCLES_PER_MULTIPLY;
+    return operand1 * operand2;
+}
+
+unsigned long long divide(cpu* cpu, unsigned long long operand1, unsigned long long operand2){
+    cpu->clock_cycles += CLOCK_CYCLES_PER_DIVIDE;
+    return operand1 / operand2;
+}
+
+void assign(cpu* cpu, unsigned long long* operand1, unsigned long long operand2){
+    cpu->clock_cycles += CLOCK_CYCLES_PER_ASSIGNMENT;
+    *operand1 = operand2;
 }
 
 //Return the pointer to register encoded in register_encoding
@@ -96,7 +142,7 @@ void clear_flags(cpu* cpu){
 }
 
 void execute_add_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
-    unsigned long long result = *operand1 + operand2;
+    unsigned long long result = add(cpu, *operand1, operand2);
     
     bool op1_sign = *operand1 >> 63;
     bool op2_sign = operand2 >> 63;
@@ -105,11 +151,11 @@ void execute_add_instruction(cpu* cpu, unsigned long long *operand1, unsigned lo
     cpu->of = (op1_sign == op2_sign) && (op1_sign != result_sign);
     cpu->cf = result < *operand1;
 
-    *operand1 = result;
+    assign(cpu, operand1, result);
 }
 
 void execute_subtraction_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
-    unsigned long long result = *operand1 - operand2;
+    unsigned long long result = subtract(cpu, *operand1, operand2);
     
     bool op1_sign = *operand1 >> 63;
     bool op2_sign = operand2 >> 63;
@@ -118,7 +164,7 @@ void execute_subtraction_instruction(cpu* cpu, unsigned long long *operand1, uns
     cpu->of = (op1_sign != op2_sign) && (op1_sign != result_sign);
     cpu->cf = result > *operand1;
 
-    *operand1 = result;
+    assign(cpu, operand1, result);
 }
 
 void execute_multiplication_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
@@ -128,19 +174,26 @@ void execute_multiplication_instruction(cpu* cpu, unsigned long long *operand1, 
     cpu->of = signed_result < INT64_MIN || signed_result > INT64_MAX;
     cpu->cf = unsigned_result > UINT64_MAX;
 
-    *operand1 = *operand1 * operand2;
+    assign(cpu, operand1, multiply(cpu, *operand1, operand2));
 }
 
 void execute_division_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
-    *operand1 = *operand1 / operand2; //OF and CF are not set by division
+    unsigned long long result = divide(cpu, *operand1, operand2);
+    
+    //OF and CF are not set by division
+    
+    assign(cpu, operand1, result);
 }
 
 void execute_assignment_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
-    *operand1 = operand2; //OF and CF are not set by assignment
+    assign(cpu, operand1, operand2);
 }
 
 void execute_load_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
-    memcpy(operand1, &cpu->memory[operand2], 8); //OF and CF are not set by load instructions
+    char* memPtr = read_memory(cpu, operand2);
+    unsigned long long result = (unsigned long long) *memPtr;
+
+    assign(cpu, operand1, result);
 }
 
 int execute_arithmetic_instruction(cpu* cpu, char* instruction){
@@ -231,6 +284,7 @@ int execute_store_instruction(cpu* cpu, char* instruction){
         }
     }
     memcpy(&cpu->memory[operand1], &operand2, 8);
+    cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
     return instructionLength;
 }
 
@@ -269,6 +323,7 @@ int execute_jump_instruction(cpu* cpu, char* instruction){
             condition_met = true;
             break;
     }
+    if(operation != 0b0111) cpu->clock_cycles += CLOCK_CYCLES_PER_FLAG_CHECK;
 
     if(condition_met){
         unsigned long long operand1;
@@ -282,7 +337,7 @@ int execute_jump_instruction(cpu* cpu, char* instruction){
             memcpy(&operand1, instruction + 1, operand1Length);
         }
         cpu->rip = operand1;
-        printf("jumping to %ld\n", cpu->rip);
+        assign(cpu, &(cpu->rip), operand1);
         return 0; 
     }
 

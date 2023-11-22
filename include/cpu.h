@@ -26,6 +26,8 @@ typedef struct cpu{
     unsigned long long rip;
 
     char memory[64];
+
+    unsigned long long clock_cycles;
 } cpu;
 
 cpu init_cpu();
