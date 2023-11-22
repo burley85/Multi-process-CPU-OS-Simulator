@@ -354,6 +354,12 @@ void execute_instruction(cpu* cpu, char* instruction){
     cpu->rip += instruction_length;
 }
 
+void run_cpu(cpu* cpu){
+    while((unsigned char) cpu->memory[cpu->rip] != 0b11111111){
+        execute_instruction(cpu, &(cpu->memory[cpu->rip]));
+    }
+}
+
 char* labels[128];
 unsigned long long label_addresses[128];
 int label_count = 0;
@@ -424,4 +430,9 @@ void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
         }
     }
     cpu->memory[base] = 0b11111111;
+
+    //Free labels
+    for(int i = 0; i < label_count; i++){
+        free(labels[i]);
+    }
 }

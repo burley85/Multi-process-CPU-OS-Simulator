@@ -32,5 +32,6 @@ typedef struct cpu{
 
 cpu init_cpu();
 void dump_cpu(cpu cpu);
+void run_cpu(cpu* cpu);
 void encode_file(FILE* fp, cpu* cpu, unsigned long long base);
 void execute_instruction(cpu* cpu, char* instruction);
