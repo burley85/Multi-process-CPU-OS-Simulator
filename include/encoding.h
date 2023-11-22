@@ -114,4 +114,9 @@ They are encoded as follows:
     Operand (8-64 bits)
 
 **/
+#ifndef ENCODING_H
+#define ENCODING_H
+
 char* encode_instruction(char *instruction, int* encoding_length);
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef TOKENIZER_H
+#define TOKENIZER_H
+
 //Symbols
 #define PLUS 0
 #define MINUS 1
@@ -52,3 +55,5 @@ char* token_to_str(int token);
 char* current_token_str(Parser *p);
 int current_token(Parser *p);
 int next_token(Parser *p);
+
+#endif
