@@ -30,7 +30,7 @@ cpu init_cpu(){
     c.zf = false;
     c.cf = false;
     c.rip = 0;
-    memset(c.memory, 0, 64);
+    memset(c.memory, 0, RAM_SIZE);
     c.clock_cycles = 0;
     return c;
 }
@@ -58,7 +58,7 @@ void dump_cpu(cpu cpu){
     printf("cf: %d\n", cpu.cf);
     printf("rip: 0x%llx\n", cpu.rip);
     printf("\nmemory:\n");
-    for(int i = 0; i < 64; i++){
+    for(int i = 0; i < RAM_SIZE; i++){
         if(cpu.memory[i] != 0){
             printf("0x%X: ", i);
             print_bin(&cpu.memory[i], 1);
@@ -360,11 +360,11 @@ void run_cpu(cpu* cpu){
     }
 }
 
-char* labels[128];
-unsigned long long label_addresses[128];
-int label_count = 0;
-
 void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
+    char* labels[128];
+    unsigned long long label_addresses[128];
+    int label_count = 0;
+
     //Initial pass to look for labels and find their addresses
     unsigned long long address = base;
     while(!feof(fp)){
@@ -392,7 +392,6 @@ void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
             address += encoding_length;
             free(encoding);
         }
-
     }
 
     fseek(fp, 0, SEEK_SET);
@@ -408,7 +407,6 @@ void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
         if(encoding != NULL){
             //If instruction is a jump, replace the 8 0 bytes with the address of the label
             if((unsigned char) encoding[0] >> 4 > 0b0110){
-                dump_cpu(*cpu);
                 //Find the label
                 char label_location[128] = "";
                 sscanf(instruction, "%*s %s:", label_location);

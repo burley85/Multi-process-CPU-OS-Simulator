@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define RAM_SIZE 128
+
 typedef struct cpu{
     unsigned long long rax;
     unsigned long long rbx;
@@ -28,7 +30,7 @@ typedef struct cpu{
 
     unsigned long long rip;
 
-    char memory[64];
+    char memory[RAM_SIZE];
 
     unsigned long long clock_cycles;
 } cpu;
