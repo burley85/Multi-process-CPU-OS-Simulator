@@ -376,8 +376,8 @@ void encode_file(FILE* fp, cpu* cpu){
     while(!feof(fp)){
         char instruction[128] = "";
         char terminator;
-        fscanf(fp, " %128[^;:]%c", &instruction, &terminator);
-        //Check if the instruction is a label (next character is a colon)
+        fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
+        //Check if the line is a label (next character is a colon)
         if(terminator == ':'){
             if(strlen(instruction) == 0){
                 printf("ERROR: Label cannot be empty\n");
@@ -391,9 +391,9 @@ void encode_file(FILE* fp, cpu* cpu){
             labels[label_count] = label;
             label_addresses[label_count] = address;
             label_count++;
-            printf("Label %s found at address 0x%llx\n", label, address);
         }
         else{
+            if(terminator == ';') fscanf(fp, "%*[^\n]");
             int encoding_length;
             char* encoding = encode_instruction(instruction, &encoding_length);
             address += encoding_length;
@@ -406,9 +406,9 @@ void encode_file(FILE* fp, cpu* cpu){
     while(!feof(fp)){
         char instruction[128] = "";
         char terminator;
-        fscanf(fp, " %128[^;:]%c", &instruction, &terminator);
+        fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
         if(terminator == ':') continue;
-
+        if(terminator == ';') fscanf(fp, "%*[^\n]");
         int encoding_length = 0;
 
         char* encoding = encode_instruction(instruction, &encoding_length);
