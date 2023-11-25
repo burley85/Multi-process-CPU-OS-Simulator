@@ -375,7 +375,7 @@ void encode_file(FILE* fp, cpu* cpu){
     unsigned long long address = cpu->mmu.base;
     while(!feof(fp)){
         char instruction[128] = "";
-        char terminator;
+        char terminator = '\0';
         fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
         //Check if the line is a label (next character is a colon)
         if(terminator == ':'){
@@ -405,7 +405,7 @@ void encode_file(FILE* fp, cpu* cpu){
     address = 0;
     while(!feof(fp)){
         char instruction[128] = "";
-        char terminator;
+        char terminator = '\0';
         fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
         if(terminator == ':') continue;
         if(terminator == ';') fscanf(fp, "%*[^\n]");
