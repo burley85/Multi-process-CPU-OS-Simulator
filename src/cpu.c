@@ -31,6 +31,8 @@ cpu init_cpu(){
     c.cf = false;
     c.rip = 0;
     memset(c.memory, 0, RAM_SIZE);
+    c.mmu.base = 0;
+    c.mmu.limit = 0;
     c.clock_cycles = 0;
     return c;
 }
@@ -79,12 +81,14 @@ void dump_cpu(cpu cpu){
 
 char* read_memory(cpu* cpu, unsigned long long address){
     cpu->clock_cycles += CLOCK_CYCLES_PER_READ;
-    return &cpu->memory[address];
+    if(address < 0 || address >= cpu->mmu.limit) return NULL;
+    return &cpu->memory[address + cpu->mmu.base];
 }
 
 void write_memory(cpu* cpu, unsigned long long address, char* value, int length){
     cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
-    memcpy(&cpu->memory[address], value, length);
+    if(address >= 0 && address < cpu->mmu.limit && address + cpu->mmu.base < RAM_SIZE) 
+        memcpy(&cpu->memory[address + cpu->mmu.base], value, length);
 }
 
 unsigned long long add(cpu* cpu, unsigned long long operand1, unsigned long long operand2){
@@ -283,7 +287,7 @@ int execute_store_instruction(cpu* cpu, char* instruction){
             operand2 = *decode_register(cpu, operand2_encoding);
         }
     }
-    memcpy(&cpu->memory[operand1], &operand2, 8);
+    write_memory(cpu, operand1, (char*) &operand2, operand1Length / 8);
     cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
     return instructionLength;
 }
@@ -355,18 +359,20 @@ void execute_instruction(cpu* cpu, char* instruction){
 }
 
 void run_cpu(cpu* cpu){
-    while((unsigned char) cpu->memory[cpu->rip] != 0b11111111){
-        execute_instruction(cpu, &(cpu->memory[cpu->rip]));
+    unsigned char* instruction = read_memory(cpu, cpu->rip);
+    while(*instruction != 0b11111111){
+        execute_instruction(cpu, instruction);
+        instruction = read_memory(cpu, cpu->rip);
     }
 }
 
-void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
+void encode_file(FILE* fp, cpu* cpu){
     char* labels[128];
     unsigned long long label_addresses[128];
     int label_count = 0;
 
     //Initial pass to look for labels and find their addresses
-    unsigned long long address = base;
+    unsigned long long address = cpu->mmu.base;
     while(!feof(fp)){
         char instruction[128] = "";
         char terminator;
@@ -385,6 +391,7 @@ void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
             labels[label_count] = label;
             label_addresses[label_count] = address;
             label_count++;
+            printf("Label %s found at address 0x%llx\n", label, address);
         }
         else{
             int encoding_length;
@@ -395,6 +402,7 @@ void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
     }
 
     fseek(fp, 0, SEEK_SET);
+    address = 0;
     while(!feof(fp)){
         char instruction[128] = "";
         char terminator;
@@ -422,12 +430,13 @@ void encode_file(FILE* fp, cpu* cpu, unsigned long long base){
                     return;
                 }
             }
-            memcpy(&cpu->memory[base], encoding, encoding_length);
-            base += encoding_length;
+            write_memory(cpu, address, encoding, encoding_length);
+            address += encoding_length;
             free(encoding);
         }
     }
-    cpu->memory[base] = 0b11111111;
+    char halt = 0b11111111;
+    write_memory(cpu, address,  &halt, 1);
 
     //Free labels
     for(int i = 0; i < label_count; i++){

@@ -5,6 +5,11 @@
 
 #define RAM_SIZE 128
 
+typedef struct mmu{
+    unsigned long long base;
+    unsigned long long limit;
+} mmu;
+
 typedef struct cpu{
     unsigned long long rax;
     unsigned long long rbx;
@@ -31,6 +36,7 @@ typedef struct cpu{
     unsigned long long rip;
 
     char memory[RAM_SIZE];
+    mmu mmu;
 
     unsigned long long clock_cycles;
 } cpu;
@@ -38,7 +44,7 @@ typedef struct cpu{
 cpu init_cpu();
 void dump_cpu(cpu cpu);
 void run_cpu(cpu* cpu);
-void encode_file(FILE* fp, cpu* cpu, unsigned long long base);
+void encode_file(FILE* fp, cpu* cpu);
 void execute_instruction(cpu* cpu, char* instruction);
 
 #endif
