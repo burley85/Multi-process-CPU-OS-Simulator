@@ -123,12 +123,13 @@ int parse_register_token(Parser *p){
     char* register_names[16] = {"rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"};
     
     char token[5] = "r";
-    if(p->isFile) fscanf(p->fileOrString, "%3s", token + 1);
-    else sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
-
+    if(p->isFile) fscanf(p->fileOrString, "%3[a-zA-Z0-9]", token + 1);
+    else sscanf((char*) (p->fileOrString) + p->position, "%3[a-zA-Z0-9]", token + 1);
+    char next[5];
+    sscanf(p->fileOrString, "%c", &next);
     for(int i = 0; i < 16; i++){
         if(strcmp(token, register_names[i]) == 0){
-            if(!p->isFile) p->position += strlen(token);
+            if(!p->isFile) p->position += strlen(token + 1);
             return RAX + i;
         }
     }
@@ -185,7 +186,10 @@ int next_token(Parser *p){
         case 'p':
             char token[5] = "p";
             if(p->isFile) fscanf(p->fileOrString, "%3s", token + 1);
-            else sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
+            else{
+                sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
+                p->position += strlen(token + 1);
+            }
             if(strcmp(token, "pop") == 0) p->tokenType = POP;
             else if(strcmp(token, "push") == 0) p->tokenType = PUSH;
             else p->tokenType = LABEL;
