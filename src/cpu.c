@@ -377,6 +377,8 @@ void encode_file(FILE* fp, cpu* cpu){
         char instruction[128] = "";
         char terminator = '\0';
         fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
+        if(strlen(instruction) == 0) fscanf(fp, " %c", &terminator);
+
         //Check if the line is a label (next character is a colon)
         if(terminator == ':'){
             if(strlen(instruction) == 0){
@@ -394,6 +396,7 @@ void encode_file(FILE* fp, cpu* cpu){
         }
         else{
             if(terminator == ';') fscanf(fp, "%*[^\n]");
+            if(strlen(instruction) == 0) continue;
             int encoding_length;
             char* encoding = encode_instruction(instruction, &encoding_length);
             address += encoding_length;
@@ -407,6 +410,7 @@ void encode_file(FILE* fp, cpu* cpu){
         char instruction[128] = "";
         char terminator = '\0';
         fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
+        if(strlen(instruction) == 0) fscanf(fp, " %c", &terminator);
         if(terminator == ':') continue;
         if(terminator == ';') fscanf(fp, "%*[^\n]");
         int encoding_length = 0;
