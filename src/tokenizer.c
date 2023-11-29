@@ -77,6 +77,14 @@ char* token_to_str(int token){
             return "EOF";
         case LABEL:
             return "label";
+        case PUSH:
+            return "push";
+        case POP:
+            return "pop";
+        case HALT:
+            return "halt";
+        case SYSTEM:
+            return "system";
         default:
             return "ERROR";
     }
@@ -173,6 +181,14 @@ int next_token(Parser *p){
         case 'j':
             p->tokenType = parse_jump_token(p);
             if(p->tokenType == -1) p->tokenType = LABEL;
+            break;
+        case 'p':
+            char token[5] = "p";
+            if(p->isFile) fscanf(p->fileOrString, "%3s", token + 1);
+            else sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
+            if(strcmp(token, "pop") == 0) p->tokenType = POP;
+            else if(strcmp(token, "push") == 0) p->tokenType = PUSH;
+            else p->tokenType = LABEL;
             break;
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
             p->tokenType = LITERAL;

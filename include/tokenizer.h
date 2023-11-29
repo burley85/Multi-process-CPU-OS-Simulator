@@ -1,46 +1,50 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
+//Registers
+#define RAX 0
+#define RBX 1
+#define RCX 2
+#define RDX 3
+#define RSI 4
+#define RDI 5
+#define RBP 6
+#define RSP 7
+#define R8 8
+#define R9 9
+#define R10 10
+#define R11 11
+#define R12 12
+#define R13 13
+#define R14 14
+#define R15 15
+
 //Symbols
-#define PLUS 0
-#define MINUS 1
-#define TIMES 2
-#define DIVIDE 3
-#define EQUALS 4
-#define LPAREN 5
-#define RPAREN 6
+#define PLUS 16
+#define MINUS 17
+#define TIMES 18
+#define DIVIDE 19
+#define EQUALS 20
+#define LPAREN 21
+#define RPAREN 22
 
 //Keywords
-#define JMP 7
-#define JO 8
-#define JNO 9
-#define JZ 10
-#define JNZ 11
-#define JC 12
-#define JNC 13
-#define JS 14
-#define JNS 15
+#define JMP 23
+#define JO 24
+#define JNO 25
+#define JZ 26
+#define JNZ 27
+#define JC 28
+#define JNC 29
+#define JS 30
+#define JNS 31
+#define PUSH 32
+#define POP 33
+#define HALT 34
+#define SYSTEM 35
 
-//Registers
-#define RAX 16
-#define RBX 17
-#define RCX 18
-#define RDX 19
-#define RSI 20
-#define RDI 21
-#define RBP 22
-#define RSP 23
-#define R8 24
-#define R9 25
-#define R10 26
-#define R11 27
-#define R12 28
-#define R13 29
-#define R14 30
-#define R15 31
-
-#define LITERAL 32
-#define LABEL 33
+#define LITERAL 36
+#define LABEL 37
 
 
 typedef struct Parser {
