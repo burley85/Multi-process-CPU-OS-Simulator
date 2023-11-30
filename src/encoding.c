@@ -7,20 +7,59 @@
 #include "helper.h"
 
 char encode_register(int reg){
-    if(reg < RAX || reg > R15){
-        printf("ERROR: Expected register, got %s\n", token_to_str(reg));
-        return -1;
+    switch(reg){
+        case RAX: return RAX_ENCODING;
+        case RBX: return RBX_ENCODING;
+        case RCX: return RCX_ENCODING;
+        case RDX: return RDX_ENCODING;
+        case RBP: return RBP_ENCODING;
+        case RSP: return RSP_ENCODING;
+        case RSI: return RSI_ENCODING;
+        case RDI: return RDI_ENCODING;
+        case R8: return R8_ENCODING;
+        case R9: return R9_ENCODING;
+        case R10: return R10_ENCODING;
+        case R11: return R11_ENCODING;
+        case R12: return R12_ENCODING;
+        case R13: return R13_ENCODING;
+        case R14: return R14_ENCODING;
+        case R15: return R15_ENCODING;
+        default:
+            printf("ERROR: Expected register, got %s\n", token_to_str(reg));
+            return HALT_ENCODING;
     }
-    return reg - RAX;
 }
 
 //Returns encoded operator for arithmetic or jump keyword
 char encode_operator(int op){
-    if(op < PLUS || op > JNS){
-        printf("ERROR: Expected operator, got %s\n", token_to_str(op));
-        return -1;
+    switch(op) {
+        case PLUS: return ADD_ENCODING;
+        case MINUS: return SUB_ENCODING;
+        case TIMES: return MUL_ENCODING;
+        case DIVIDE: return DIV_ENCODING;
+        case EQUALS: return EQUAL_ENCODING;
+        default:
+            printf("ERROR: Expected operator, got %s\n", token_to_str(op));
+            return HALT_ENCODING;
     }
-    return op - PLUS;
+}
+
+char encode_keyword(int token){
+    switch(token){
+        case JMP: return JMP_ENCODING;
+        case JO: return JO_ENCODING;
+        case JNO: return JNO_ENCODING;
+        case JZ: return JZ_ENCODING;
+        case JNZ: return JNZ_ENCODING;
+        case JC: return JC_ENCODING;
+        case JNC: return JNC_ENCODING;
+        case JS: return JS_ENCODING;
+        case JNS: return JNS_ENCODING;
+        case HALT: return HALT_ENCODING;
+        default:
+            printf("ERROR: Expected keyword, got %s\n", token_to_str(token));
+            return HALT_ENCODING;
+    }
 }
 
 //Returns minimum number of bytes needed to store a literal
@@ -86,7 +125,7 @@ char* encode_load_instruction(Parser *p, int operand1, int* encoding_length){
         encoded_instruction = malloc(2);
         *encoding_length = 2;
         //Set first 4 bits to the load operation encoding
-        encoded_instruction[0] = 0b0101 << 4;
+        encoded_instruction[0] = LOAD_ENCODING << 4;
         //Set next 4 bits to the encoded register
         encoded_instruction[0] += encode_register(operand1);
         //Set next 4 bits to 0000
@@ -102,7 +141,7 @@ char* encode_load_instruction(Parser *p, int operand1, int* encoding_length){
         encoded_instruction = malloc(2 + min_length);
         *encoding_length = 2 + min_length;
         //Set first 4 bits to the load operation encoding
-        encoded_instruction[0] = 0b0101 << 4;
+        encoded_instruction[0] = LOAD_ENCODING << 4;
         //Set next 4 bits to the encoded register
         encoded_instruction[0] += encode_register(operand1);
         //Set next 4 bits to length of literal; the next 4 bits will be padding
@@ -159,7 +198,7 @@ char* encode_store_instruction(Parser *p, int* encoding_length){
     if(operand1 != LITERAL && operand2 != LITERAL){
         char* encoded_instruction = malloc(2);
         //Set first 6 bits to 0110 00 for store operation and to signify that both operands are registers
-        encoded_instruction[0] = 0b011000 << 2;
+        encoded_instruction[0] = STORE_ENCODING << 4;
         //Set the next byte to encoding each register
         encoded_instruction[1] = encode_register(operand1) << 4;
         encoded_instruction[1] += encode_register(operand2);
@@ -177,7 +216,7 @@ char* encode_store_instruction(Parser *p, int* encoding_length){
 
     char* encoded_instruction = malloc(instruction_length_bytes);
     //Set first 4 bits to 0110 for store operation
-    encoded_instruction[0] = 0b0110 << 4;
+    encoded_instruction[0] = STORE_ENCODING << 4;
     //Set next bit to 1 if operand 1 is a literal
     if(operand1 == LITERAL) encoded_instruction[0] += 1 << 3;
     //Set next bit to 1 if operand 2 is a literal
@@ -223,9 +262,9 @@ char* encode_jump_instruction(Parser *p, int* encoding_length){
         encoded_instruction = malloc(9);
         *encoding_length = 9;
         //Set first 4 bits to the jump operation encoding
-        encoded_instruction[0] = encode_operator(jump_token) << 4;
-        //Set next 4 bits to 1000 to indicate that operand is a 64 bit literal
-        encoded_instruction[0] += 0b1000;
+        encoded_instruction[0] = encode_keyword(jump_token) << 4;
+        //Set next 4 bits to 1000 to indicate that operand is a 8 byte literal
+        encoded_instruction[0] += 8;
         //Set next 8 bytes to 0, which will be replaced with the address of the label
         memset(encoded_instruction + 1, 0, 8);
     }
@@ -237,7 +276,7 @@ char* encode_jump_instruction(Parser *p, int* encoding_length){
         encoded_instruction = malloc(1 + operandLength);
         *encoding_length = 1 + operandLength;
         //Set first 4 bits to the jump operation encoding
-        encoded_instruction[0] = encode_operator(jump_token) << 4;
+        encoded_instruction[0] = encode_keyword(jump_token) << 4;
         //Set next 4 bits to length of literal
         encoded_instruction[0] += operandLength;
         //Set next operandLength bytes to the significant bytes of the literal
@@ -247,7 +286,7 @@ char* encode_jump_instruction(Parser *p, int* encoding_length){
         encoded_instruction = malloc(2);
         *encoding_length = 2;
         //Set first 4 bits to the jump operation 
-        encoded_instruction[0] = encode_operator(jump_token) << 4;
+        encoded_instruction[0] = encode_keyword(jump_token) << 4;
         //Leave the last 4 bits as 0000 to indicate that operand is a register
         //Set next 4 bits to the encoded register
         encoded_instruction[1] = encode_register(operand) << 4;
@@ -267,12 +306,12 @@ char* encode_push(Parser *p, int* encoding_length){
     char* encoded_instruction = malloc(5);
 
     //Encode rsp-8
-    encoded_instruction[0] = 0b00010111; // 0001 for -, 0111 for rsp
-    encoded_instruction[1] = 0b00010000; // 0001 for length of operand, 0000 for padding
-    encoded_instruction[2] = 0b00001000; // 00001000 for 8
-    //Encode (rsp)=operand (0b0110 0000 0111 XXXX)
-    encoded_instruction[3] = 0b01100000; // 0110 for store, 00 to signify that both operands are registers, 00 for padding
-    encoded_instruction[4] = 0b01110000 + operand; // 0111 for rsp, next four bits for operand
+    encoded_instruction[0] = (SUB_ENCODING << 4) + RSP_ENCODING; // 0001 for -, 0111 for rsp
+    encoded_instruction[1] = literal_length(8) << 4; // 0001 for length of operand, 0000 for padding
+    encoded_instruction[2] = 8; // 00001000 for 8
+    //Encode (rsp)=operand
+    encoded_instruction[3] = STORE_ENCODING << 4; // 0110 for store, 00 to signify that both operands are registers, 00 for padding
+    encoded_instruction[4] = (RSP_ENCODING << 4) + operand; // 0111 for rsp, next four bits for operand
     return encoded_instruction;
 }
 
@@ -284,12 +323,12 @@ char* encode_pop(Parser *p, int* encoding_length){
     char* encoded_instruction = malloc(5);
 
     //Encode operand=(rsp)
-    encoded_instruction[0] = 0b01010000 + operand; // 0101 for load, next four bits for operand
-    encoded_instruction[1] = 0b00000111; // 0000 to signify that rsp is a register, 0111 for rsp
+    encoded_instruction[0] = (LOAD_ENCODING << 4) + operand; // 0101 for load, next four bits for operand
+    encoded_instruction[1] = RSP_ENCODING; // 0000 to signify that rsp is a register, 0111 for rsp
     //Encode rsp+8
-    encoded_instruction[2] = 0b00000111; // 0000 for +, 0111 for rsp
-    encoded_instruction[3] = 0b00010000; // 0001 for length of operand, 0000 for padding
-    encoded_instruction[4] = 0b00001000; // 00001000 for 8
+    encoded_instruction[2] = (ADD_ENCODING << 4) + RSP_ENCODING; // 0000 for +, 0111 for rsp
+    encoded_instruction[3] = literal_length(8) << 4; // 0001 for length of operand, 0000 for padding
+    encoded_instruction[4] = 8; // 00001000 for 8
     return encoded_instruction;
 }
 

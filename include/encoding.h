@@ -41,6 +41,7 @@ Operations are encoded in 4 bits, with the following mapping:
     1101: jnc (or jnb)
     1110: js
     1111: jns
+    11111XXX: Kernel commands (XXX != 000)
 
 For operations 0000-0101, operand 1 is a register and operand 2 is a register or literal constant.
 They are encoded as follows:
@@ -111,7 +112,11 @@ They are encoded as follows:
         0110: constant--48 bits
         0111: constant--56 bits
         1000: constant--64 bits
+        1XXX: used for kernel commands when XXX != 000 (See below)
     Operand (8-64 bits)
+
+Kernel commands:    
+    11111111: halt
 
 Aliases:
     These operations do not have a unique encoding, but are encoded using a series of other operations:
@@ -123,6 +128,43 @@ Aliases:
 **/
 #ifndef ENCODING_H
 #define ENCODING_H
+
+#define RAX_ENCODING 0b0000
+#define RBX_ENCODING 0b0001
+#define RCX_ENCODING 0b0010
+#define RDX_ENCODING 0b0011
+#define RSI_ENCODING 0b0100
+#define RDI_ENCODING 0b0101
+#define RBP_ENCODING 0b0110
+#define RSP_ENCODING 0b0111
+#define R8_ENCODING 0b1000
+#define R9_ENCODING 0b1001
+#define R10_ENCODING 0b1010
+#define R11_ENCODING 0b1011
+#define R12_ENCODING 0b1100
+#define R13_ENCODING 0b1101
+#define R14_ENCODING 0b1110
+#define R15_ENCODING 0b1111
+
+#define ADD_ENCODING 0b0000
+#define SUB_ENCODING 0b0001
+#define MUL_ENCODING 0b0010
+#define DIV_ENCODING 0b0011
+#define EQUAL_ENCODING 0b0100
+#define LOAD_ENCODING 0b0101
+#define STORE_ENCODING 0b0110
+
+#define JMP_ENCODING 0b0111
+#define JO_ENCODING 0b1000
+#define JNO_ENCODING 0b1001
+#define JZ_ENCODING 0b1010
+#define JNZ_ENCODING 0b1011
+#define JC_ENCODING 0b1100
+#define JNC_ENCODING 0b1101
+#define JS_ENCODING 0b1110
+#define JNS_ENCODING 0b1111
+
+#define HALT_ENCODING 0b11111111
 
 char* encode_instruction(char *instruction, int* encoding_length);
 
