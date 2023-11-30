@@ -113,6 +113,13 @@ They are encoded as follows:
         1000: constant--64 bits
     Operand (8-64 bits)
 
+Aliases:
+    These operations do not have a unique encoding, but are encoded using a series of other operations:
+    In the following, a must be a register
+    push a -> rsp-8;(rsp)=a
+    pop a -> a=(rsp);rsp+8
+
+
 **/
 #ifndef ENCODING_H
 #define ENCODING_H

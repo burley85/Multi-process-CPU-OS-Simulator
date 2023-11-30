@@ -259,6 +259,40 @@ char* encode_jump_instruction(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
+char* encode_push(Parser *p, int* encoding_length){
+    int operand = encode_register(next_token(p));
+    if(operand == -1) return NULL;
+
+    *encoding_length = 5;
+    char* encoded_instruction = malloc(5);
+
+    //Encode rsp-8
+    encoded_instruction[0] = 0b00010111; // 0001 for -, 0111 for rsp
+    encoded_instruction[1] = 0b00010000; // 0001 for length of operand, 0000 for padding
+    encoded_instruction[2] = 0b00001000; // 00001000 for 8
+    //Encode (rsp)=operand (0b0110 0000 0111 XXXX)
+    encoded_instruction[3] = 0b01100000; // 0110 for store, 00 to signify that both operands are registers, 00 for padding
+    encoded_instruction[4] = 0b01110000 + operand; // 0111 for rsp, next four bits for operand
+    return encoded_instruction;
+}
+
+char* encode_pop(Parser *p, int* encoding_length){
+    int operand = encode_register(next_token(p));
+    if(operand == -1) return NULL;
+
+    *encoding_length = 5;
+    char* encoded_instruction = malloc(5);
+
+    //Encode operand=(rsp)
+    encoded_instruction[0] = 0b01010000 + operand; // 0101 for load, next four bits for operand
+    encoded_instruction[1] = 0b00000111; // 0000 to signify that rsp is a register, 0111 for rsp
+    //Encode rsp+8
+    encoded_instruction[2] = 0b00000111; // 0000 for +, 0111 for rsp
+    encoded_instruction[3] = 0b00010000; // 0001 for length of operand, 0000 for padding
+    encoded_instruction[4] = 0b00001000; // 00001000 for 8
+    return encoded_instruction;
+}
+
 char* encode_instruction(char *instruction, int* encoding_length) {
     // Find the operation and call the appropriate function
     Parser p;
@@ -278,7 +312,10 @@ char* encode_instruction(char *instruction, int* encoding_length) {
         if(token1 == EQUALS && token2 == LPAREN) return encode_load_instruction(&p, reg, encoding_length);
         else return encode_arithmetic_instruction(&p, reg, token1, encoding_length);
     }
-    else if(token != LABEL){
+    if(token == POP) return encode_pop(&p, encoding_length);
+    if(token == PUSH) return encode_push(&p, encoding_length);
+
+    if(token != LABEL){
         printf("ERROR: Expected register, jump, label, or LPAREN, got %s\n", current_token_str(&p));
     }
     return NULL;
