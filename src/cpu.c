@@ -252,10 +252,13 @@ int execute_store_instruction(cpu* cpu, char* instruction){
     unsigned long long operand1 = 0;
     unsigned long long operand2 = 0;
     char operand1Length = 0;
+    bool operand1IsRegister = false;
     int instructionLength = 2; //The length if both operands are registers
-    if(instruction[0] & 0b00001100 == 0){
+    
+    if((instruction[0] & 0b00001100) == 0){
         //Both operands are registers
-        char operand1_encoding = instruction[1] & 0b11110000 >> 4;
+        operand1IsRegister = true;
+        char operand1_encoding = (instruction[1] & 0b11110000) >> 4;
         operand1 = *decode_register(cpu, operand1_encoding);
         char operand2_encoding = instruction[1] & 0b00001111;
         operand2 = *decode_register(cpu, operand2_encoding);
@@ -270,14 +273,15 @@ int execute_store_instruction(cpu* cpu, char* instruction){
         }
         else{
             //Operand 1 is a register
+            operand1IsRegister = true;
             operand1Length = 4;
             operand1 = *decode_register(cpu, instruction[1] & 0b00001111);
         }
         if(instruction[0] & 0b00000100){
             //Operand 2 is a literal
-            char operand2Length = instruction[1] & 0b01110000 >> 4;
+            char operand2Length = (instruction[1] & 0b01110000) >> 4;
             operand2Length = (operand2Length + 1) * 8;
-            if(operand1Length == 4) memcpy_bits(&operand2, 0, instruction + 2, 0, operand2Length);
+            if(operand1IsRegister) memcpy_bits(&operand2, 0, instruction + 2, 0, operand2Length);
             else memcpy_bits(&operand2, 0, instruction + 1 + (operand1Length / 8), 4, operand2Length);
             instructionLength += operand2Length / 8;
         }
@@ -287,7 +291,7 @@ int execute_store_instruction(cpu* cpu, char* instruction){
             operand2 = *decode_register(cpu, operand2_encoding);
         }
     }
-    write_memory(cpu, operand1, (char*) &operand2, operand1Length / 8);
+    write_memory(cpu, operand1, (char*) &operand2, operand1IsRegister ? 8 : operand1Length);
     cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
     return instructionLength;
 }
