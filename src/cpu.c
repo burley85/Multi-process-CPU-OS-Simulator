@@ -404,7 +404,7 @@ void encode_file(FILE* fp, cpu* cpu){
             int encoding_length;
             char* encoding = encode_instruction(instruction, &encoding_length);
             address += encoding_length;
-            free(encoding);
+            if(encoding != NULL) free(encoding);
         }
     }
 

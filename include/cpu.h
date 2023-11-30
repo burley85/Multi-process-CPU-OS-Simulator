@@ -2,6 +2,7 @@
 #define CPU_H
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #define RAM_SIZE 128
 
