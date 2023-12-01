@@ -46,6 +46,8 @@
 #define LITERAL 36
 #define LABEL 37
 
+#define KEYWORD_LIST {"rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "jmp", "jo", "jno", "jz", "jnz", "jc", "jnc", "js", "jns", "push", "pop", "halt", "system"}
+#define KEYWORD_TOKEN_LIST {RAX, RBX, RCX, RDX, RSI, RDI, RBP, RSP, R8, R9, R10, R11, R12, R13, R14, R15, JMP, JO, JNO, JZ, JNZ, JC, JNC, JS, JNS, PUSH, POP, HALT, SYSTEM}
 
 typedef struct Parser {
     void* fileOrString;

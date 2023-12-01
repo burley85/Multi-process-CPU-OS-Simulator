@@ -136,6 +136,24 @@ int parse_register_token(Parser *p){
     return -1;
 }
 
+int check_keywords(Parser *p){
+    char* keywords[] = KEYWORD_LIST;
+    int keyword_count = sizeof(keywords) / sizeof(char*);
+
+    char str[64] = "";
+    if(p->isFile) fscanf(p->fileOrString, "%63[a-zA-Z0-9]", str);
+    else sscanf((char*) (p->fileOrString) + p->position, "%63[a-zA-Z0-9]", str);
+    printf("Checking keyword: %s\n", str);
+    for(int i = 0; i < keyword_count; i++){
+        if(strcmp(str, keywords[i]) == 0){
+            if(!p->isFile) p->position += strlen(str);
+            int tokens[] = KEYWORD_TOKEN_LIST;
+            return tokens[i];
+        }
+    }
+    return -1;
+}
+
 int next_token(Parser *p){
     char c;
     p->tokenType = -1;
@@ -175,25 +193,6 @@ int next_token(Parser *p){
         case ')':
             p->tokenType = RPAREN;
             break;
-        case 'r':
-            p->tokenType = parse_register_token(p);
-            if(p->tokenType == -1) p->tokenType = LABEL;
-            break;
-        case 'j':
-            p->tokenType = parse_jump_token(p);
-            if(p->tokenType == -1) p->tokenType = LABEL;
-            break;
-        case 'p':
-            char token[5] = "p";
-            if(p->isFile) fscanf(p->fileOrString, "%3s", token + 1);
-            else{
-                sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
-                p->position += strlen(token + 1);
-            }
-            if(strcmp(token, "pop") == 0) p->tokenType = POP;
-            else if(strcmp(token, "push") == 0) p->tokenType = PUSH;
-            else p->tokenType = LABEL;
-            break;
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
             p->tokenType = LITERAL;
             if(p->isFile){
@@ -208,8 +207,11 @@ int next_token(Parser *p){
             }
             break;
         default: 
-            p->tokenType = LABEL;
-
+            //unget character and check for keywords
+            if(p->isFile) ungetc(c, p->fileOrString);
+            else p->position--;
+            p->tokenType = check_keywords(p);
     }
+
     return p->tokenType;
 }
