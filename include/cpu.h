@@ -36,7 +36,7 @@ typedef struct cpu{
 
     unsigned long long rip;
 
-    char memory[RAM_SIZE];
+    unsigned char memory[RAM_SIZE];
     mmu mmu;
 
     unsigned long long clock_cycles;
@@ -46,6 +46,6 @@ cpu init_cpu();
 void dump_cpu(cpu cpu);
 void run_cpu(cpu* cpu);
 void encode_file(FILE* fp, cpu* cpu);
-void execute_instruction(cpu* cpu, char* instruction);
+void execute_instruction(cpu* cpu, unsigned char* instruction);
 
 #endif

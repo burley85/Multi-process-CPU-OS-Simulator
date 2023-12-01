@@ -6,7 +6,7 @@
 #include "encoding.h"
 #include "helper.h"
 
-char encode_register(int reg){
+unsigned char encode_register(int reg){
     switch(reg){
         case RAX: return RAX_ENCODING;
         case RBX: return RBX_ENCODING;
@@ -31,7 +31,7 @@ char encode_register(int reg){
 }
 
 //Returns encoded operator for arithmetic or jump keyword
-char encode_operator(int op){
+unsigned char encode_operator(int op){
     switch(op) {
         case PLUS: return ADD_ENCODING;
         case MINUS: return SUB_ENCODING;
@@ -44,7 +44,7 @@ char encode_operator(int op){
     }
 }
 
-char encode_keyword(int token){
+unsigned char encode_keyword(int token){
     switch(token){
         case JMP: return JMP_ENCODING;
         case JO: return JO_ENCODING;
@@ -77,9 +77,9 @@ char literal_length(unsigned long long literal){
     return length;
 }
 
-char* encode_arithmetic_instruction(Parser *p, int operand1, int operator, int* encoding_length){
+unsigned char* encode_arithmetic_instruction(Parser *p, int operand1, int operator, int* encoding_length){
     int operand2 = p->tokenType;
-    char* encoded_instruction = NULL;
+    unsigned char* encoded_instruction = NULL;
 
     if(operand2 >= RAX && operand2 <= R15){
         //Instruction encoding will be 2 bytes
@@ -116,9 +116,9 @@ char* encode_arithmetic_instruction(Parser *p, int operand1, int operator, int* 
     return encoded_instruction;
 }
 
-char* encode_load_instruction(Parser *p, int operand1, int* encoding_length){
+unsigned char* encode_load_instruction(Parser *p, int operand1, int* encoding_length){
     int operand2 = next_token(p);
-    char* encoded_instruction = NULL;
+    unsigned char* encoded_instruction = NULL;
 
     if(operand2 >= RAX && operand2 <= R15){
         //Instruction encoding will be 2 bytes
@@ -155,7 +155,7 @@ char* encode_load_instruction(Parser *p, int operand1, int* encoding_length){
     return encoded_instruction;
 }
 
-char* encode_store_instruction(Parser *p, int* encoding_length){
+unsigned char* encode_store_instruction(Parser *p, int* encoding_length){
     //Operand 1
     int operand1 = next_token(p);
     unsigned long long operand1LiteralVal;
@@ -196,7 +196,7 @@ char* encode_store_instruction(Parser *p, int* encoding_length){
 
     //Both operands are registers
     if(operand1 != LITERAL && operand2 != LITERAL){
-        char* encoded_instruction = malloc(2);
+        unsigned char* encoded_instruction = malloc(2);
         //Set first 6 bits to 0110 00 for store operation and to signify that both operands are registers
         encoded_instruction[0] = STORE_ENCODING << 4;
         //Set the next byte to encoding each register
@@ -214,7 +214,7 @@ char* encode_store_instruction(Parser *p, int* encoding_length){
     int instruction_length_bytes = instruction_length_bits / 8;
     if(instruction_length_bits % 8 != 0) instruction_length_bytes++;
 
-    char* encoded_instruction = malloc(instruction_length_bytes);
+    unsigned char* encoded_instruction = malloc(instruction_length_bytes);
     //Set first 4 bits to 0110 for store operation
     encoded_instruction[0] = STORE_ENCODING << 4;
     //Set next bit to 1 if operand 1 is a literal
@@ -230,14 +230,14 @@ char* encode_store_instruction(Parser *p, int* encoding_length){
     memcpy_bits(encoded_instruction + 1, 1, &operand2Length, 5, 3); 
     operand2Length++;   
     //Set the next operand1Length bytes to the first operand encoding
-    char* encoded_instruction_pos = encoded_instruction + 1;
-    char encoded_instruction_bit = 4;
+    unsigned char* encoded_instruction_pos = encoded_instruction + 1;
+    unsigned char encoded_instruction_bit = 4;
     if(operand1 == LITERAL){
         memcpy_bits(encoded_instruction_pos, encoded_instruction_bit, &operand1LiteralVal, 0, operand1Length * 8);
         encoded_instruction_pos += operand1Length;
     }  
     else{
-        char register_encoding = encode_register(operand1);
+        unsigned char register_encoding = encode_register(operand1);
         encoded_instruction[1] += register_encoding;
         encoded_instruction_bit = 0;
         encoded_instruction_pos++;
@@ -247,16 +247,16 @@ char* encode_store_instruction(Parser *p, int* encoding_length){
         memcpy_bits(encoded_instruction_pos, encoded_instruction_bit, &operand2LiteralVal, 0, operand2Length * 8);
     }  
     else{
-        char register_encoding = encode_register(operand2);
+        unsigned char register_encoding = encode_register(operand2);
         memcpy_bits(encoded_instruction_pos, encoded_instruction_bit, &register_encoding, 4, 4);
     }
     return encoded_instruction;
 }   
 
-char* encode_jump_instruction(Parser *p, int* encoding_length){
+unsigned char* encode_jump_instruction(Parser *p, int* encoding_length){
     int jump_token = p->tokenType;
     int operand = next_token(p);
-    char* encoded_instruction = NULL;
+    unsigned char* encoded_instruction = NULL;
     if(operand == LABEL){
         //Instruction encoding will be 9 bytes
         encoded_instruction = malloc(9);
@@ -298,12 +298,12 @@ char* encode_jump_instruction(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
-char* encode_push(Parser *p, int* encoding_length){
+unsigned char* encode_push(Parser *p, int* encoding_length){
     int operand = encode_register(next_token(p));
     if(operand == -1) return NULL;
 
     *encoding_length = 5;
-    char* encoded_instruction = malloc(5);
+    unsigned char* encoded_instruction = malloc(5);
 
     //Encode rsp-8
     encoded_instruction[0] = (SUB_ENCODING << 4) + RSP_ENCODING; // 0001 for -, 0111 for rsp
@@ -315,12 +315,12 @@ char* encode_push(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
-char* encode_pop(Parser *p, int* encoding_length){
+unsigned char* encode_pop(Parser *p, int* encoding_length){
     int operand = encode_register(next_token(p));
     if(operand == -1) return NULL;
 
     *encoding_length = 5;
-    char* encoded_instruction = malloc(5);
+    unsigned char* encoded_instruction = malloc(5);
 
     //Encode operand=(rsp)
     encoded_instruction[0] = (LOAD_ENCODING << 4) + operand; // 0101 for load, next four bits for operand
@@ -332,7 +332,7 @@ char* encode_pop(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
-char* encode_instruction(char *instruction, int* encoding_length) {
+unsigned char* encode_instruction(char *instruction, int* encoding_length) {
     // Find the operation and call the appropriate function
     Parser p;
     p.fileOrString = instruction;

@@ -79,13 +79,13 @@ void dump_cpu(cpu cpu){
 #define CLOCK_CYCLES_PER_ASSIGNMENT 1
 #define CLOCK_CYCLES_PER_FLAG_CHECK 1
 
-char* read_memory(cpu* cpu, unsigned long long address){
+unsigned char* read_memory(cpu* cpu, unsigned long long address){
     cpu->clock_cycles += CLOCK_CYCLES_PER_READ;
     if(address < 0 || address >= cpu->mmu.limit) return NULL;
     return &cpu->memory[address + cpu->mmu.base];
 }
 
-void write_memory(cpu* cpu, unsigned long long address, char* value, int length){
+void write_memory(cpu* cpu, unsigned long long address, unsigned char* value, int length){
     cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
     if(address >= 0 && address < cpu->mmu.limit && address + cpu->mmu.base < RAM_SIZE) 
         memcpy(&cpu->memory[address + cpu->mmu.base], value, length);
@@ -117,7 +117,7 @@ void assign(cpu* cpu, unsigned long long* operand1, unsigned long long operand2)
 }
 
 //Return the pointer to register encoded in register_encoding
-unsigned long long* decode_register(cpu* cpu, char register_encoding){
+unsigned long long* decode_register(cpu* cpu, unsigned char register_encoding){
     switch(register_encoding){
         case 0b0000: return &(cpu->rax);
         case 0b0001: return &(cpu->rbx);
@@ -194,32 +194,32 @@ void execute_assignment_instruction(cpu* cpu, unsigned long long *operand1, unsi
 }
 
 void execute_load_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
-    char* memPtr = read_memory(cpu, operand2);
+    unsigned char* memPtr = read_memory(cpu, operand2);
     unsigned long long result = (unsigned long long) *memPtr;
 
     assign(cpu, operand1, result);
 }
 
-int execute_arithmetic_instruction(cpu* cpu, char* instruction){
-    char operand1_encoding = instruction[0] & 0b00001111;
+int execute_arithmetic_instruction(cpu* cpu, unsigned char* instruction){
+    unsigned char operand1_encoding = instruction[0] & 0b00001111;
     unsigned long long *operand1 = decode_register(cpu, operand1_encoding);
     unsigned long long operand2 = 0;
     int instruction_length = 2; //The length if operand 2 is a register
 
     if((instruction[1] & 0b11110000) == 0){
         //Operand 2 is a register
-        char operand2_encoding = instruction[1] & 0b00001111;
+        unsigned char operand2_encoding = instruction[1] & 0b00001111;
         unsigned long long *temp = decode_register(cpu, operand2_encoding);
         operand2 = *temp;
     } else {
         //Operand 2 is a literal
-        char operand2_length = (instruction[1] & 0b11110000) >> 4;
+        unsigned char operand2_length = (instruction[1] & 0b11110000) >> 4;
         operand2_length = operand2_length > 8 ? 8 : operand2_length;
         memcpy(&operand2, instruction + 2, operand2_length);
         instruction_length += operand2_length;
     }
 
-    char operation = instruction[0] >> 4;
+    unsigned char operation = instruction[0] >> 4;
 
     clear_flags(cpu);
 
@@ -248,19 +248,19 @@ int execute_arithmetic_instruction(cpu* cpu, char* instruction){
     return instruction_length;
 }
 
-int execute_store_instruction(cpu* cpu, char* instruction){
+int execute_store_instruction(cpu* cpu, unsigned char* instruction){
     unsigned long long operand1 = 0;
     unsigned long long operand2 = 0;
-    char operand1Length = 0;
+    unsigned char operand1Length = 0;
     bool operand1IsRegister = false;
     int instructionLength = 2; //The length if both operands are registers
     
     if((instruction[0] & 0b00001100) == 0){
         //Both operands are registers
         operand1IsRegister = true;
-        char operand1_encoding = (instruction[1] & 0b11110000) >> 4;
+        unsigned char operand1_encoding = (instruction[1] & 0b11110000) >> 4;
         operand1 = *decode_register(cpu, operand1_encoding);
-        char operand2_encoding = instruction[1] & 0b00001111;
+        unsigned char operand2_encoding = instruction[1] & 0b00001111;
         operand2 = *decode_register(cpu, operand2_encoding);
     }
     else{
@@ -279,7 +279,7 @@ int execute_store_instruction(cpu* cpu, char* instruction){
         }
         if(instruction[0] & 0b00000100){
             //Operand 2 is a literal
-            char operand2Length = (instruction[1] & 0b01110000) >> 4;
+            unsigned char operand2Length = (instruction[1] & 0b01110000) >> 4;
             operand2Length = (operand2Length + 1) * 8;
             if(operand1IsRegister) memcpy_bits(&operand2, 0, instruction + 2, 0, operand2Length);
             else memcpy_bits(&operand2, 0, instruction + 1 + (operand1Length / 8), 4, operand2Length);
@@ -287,19 +287,19 @@ int execute_store_instruction(cpu* cpu, char* instruction){
         }
         else{
             //Operand 2 is a register
-            char operand2_encoding = instruction[1 + (operand1Length / 8)] & 0b00001111;
+            unsigned char operand2_encoding = instruction[1 + (operand1Length / 8)] & 0b00001111;
             operand2 = *decode_register(cpu, operand2_encoding);
         }
     }
-    write_memory(cpu, operand1, (char*) &operand2, operand1IsRegister ? 8 : operand1Length);
+    write_memory(cpu, operand1, (unsigned char*) &operand2, operand1IsRegister ? 8 : operand1Length);
     cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
     return instructionLength;
 }
 
-int execute_jump_instruction(cpu* cpu, char* instruction){
-    unsigned char operation = (unsigned char) instruction[0] >> 4;
+int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
+    unsigned char operation = instruction[0] >> 4;
 
-    char operand1Length = instruction[0] & 0b00001111;
+    unsigned char operand1Length = instruction[0] & 0b00001111;
 
     bool condition_met = false;
     switch(operation){
@@ -337,7 +337,7 @@ int execute_jump_instruction(cpu* cpu, char* instruction){
         unsigned long long operand1;
         if(operand1Length == 0){
             //Operand 1 is a register
-            char operand1_encoding = instruction[1] >> 4;
+            unsigned char operand1_encoding = instruction[1] >> 4;
             operand1 = *decode_register(cpu, operand1_encoding);
         }
         else{
@@ -353,8 +353,8 @@ int execute_jump_instruction(cpu* cpu, char* instruction){
     else return operand1Length + 1;    
 }
 
-void execute_instruction(cpu* cpu, char* instruction){
-    unsigned char operation = (unsigned char) instruction[0] >> 4;
+void execute_instruction(cpu* cpu, unsigned char* instruction){
+    unsigned char operation = instruction[0] >> 4;
     int instruction_length = 0;
     if(operation < 0b0110) instruction_length = execute_arithmetic_instruction(cpu, instruction);
     else if(operation == 0b0110) instruction_length = execute_store_instruction(cpu, instruction);
@@ -371,7 +371,7 @@ void run_cpu(cpu* cpu){
 }
 
 void encode_file(FILE* fp, cpu* cpu){
-    char* labels[128];
+    unsigned char* labels[128];
     unsigned long long label_addresses[128];
     int label_count = 0;
 
@@ -402,7 +402,7 @@ void encode_file(FILE* fp, cpu* cpu){
             if(terminator == ';') fscanf(fp, "%*[^\n]");
             if(strlen(instruction) == 0) continue;
             int encoding_length;
-            char* encoding = encode_instruction(instruction, &encoding_length);
+            unsigned char* encoding = encode_instruction(instruction, &encoding_length);
             address += encoding_length;
             if(encoding != NULL) free(encoding);
         }
@@ -419,10 +419,10 @@ void encode_file(FILE* fp, cpu* cpu){
         if(terminator == ';') fscanf(fp, "%*[^\n]");
         int encoding_length = 0;
 
-        char* encoding = encode_instruction(instruction, &encoding_length);
+        unsigned char* encoding = encode_instruction(instruction, &encoding_length);
         if(encoding != NULL){
             //If instruction is a jump, replace the 8 0 bytes with the address of the label
-            if((unsigned char) encoding[0] >> 4 > 0b0110){
+            if(encoding[0] >> 4 > 0b0110){
                 //Find the label
                 char label_location[128] = "";
                 sscanf(instruction, "%*s %s:", label_location);
@@ -443,7 +443,7 @@ void encode_file(FILE* fp, cpu* cpu){
             free(encoding);
         }
     }
-    char halt = 0b11111111;
+    unsigned char halt = 0b11111111;
     write_memory(cpu, address,  &halt, 1);
 
     //Free labels

@@ -166,6 +166,6 @@ Aliases:
 
 #define HALT_ENCODING 0b11111111
 
-char* encode_instruction(char *instruction, int* encoding_length);
+unsigned char* encode_instruction(unsigned char *instruction, int* encoding_length);
 
 #endif
