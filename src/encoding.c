@@ -332,6 +332,13 @@ unsigned char* encode_pop(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
+unsigned char* encode_halt(Parser *p, int* encoding_length){
+    *encoding_length = 1;
+    unsigned char* encoded_instruction = malloc(1);
+    encoded_instruction[0] = HALT_ENCODING;
+    return encoded_instruction;
+}
+
 unsigned char* encode_instruction(char *instruction, int* encoding_length) {
     // Find the operation and call the appropriate function
     Parser p;
@@ -353,9 +360,10 @@ unsigned char* encode_instruction(char *instruction, int* encoding_length) {
     }
     if(token == POP) return encode_pop(&p, encoding_length);
     if(token == PUSH) return encode_push(&p, encoding_length);
+    if(token == HALT) return encode_halt(&p, encoding_length);
 
     if(token != LABEL){
-        printf("ERROR: Expected register, jump, label, or LPAREN, got %s\n", current_token_str(&p));
+        printf("ERROR: Expected register, jump, label, halt, or LPAREN, got %s\n", current_token_str(&p));
     }
     return NULL;
 }   

@@ -429,7 +429,7 @@ void encode_file(FILE* fp, cpu* cpu){
         unsigned char* encoding = encode_instruction(instruction, &encoding_length);
         if(encoding != NULL){
             //If instruction is a jump, replace the 8 0 bytes with the address of the label
-            if((encoding[0] >> 4) >= JMP_ENCODING && (encoding[0] >> 4) <= JNS_ENCODING){
+            if((encoding[0] >> 4) >= JMP_ENCODING && (encoding[0] >> 4) <= JNS_ENCODING && !(encoding[0] == HALT_ENCODING)){
                 //Find the label
                 char label_location[128] = "";
                 sscanf(instruction, "%*s %s:", label_location);
@@ -451,7 +451,7 @@ void encode_file(FILE* fp, cpu* cpu){
         }
     }
     unsigned char halt = HALT_ENCODING;
-    write_memory(cpu, address, halt, 1);
+    write_memory(cpu, address, &halt, 1);
 
     //Free labels
     for(int i = 0; i < label_count; i++){
