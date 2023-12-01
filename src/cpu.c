@@ -119,22 +119,22 @@ void assign(cpu* cpu, unsigned long long* operand1, unsigned long long operand2)
 //Return the pointer to register encoded in register_encoding
 unsigned long long* decode_register(cpu* cpu, unsigned char register_encoding){
     switch(register_encoding){
-        case 0b0000: return &(cpu->rax);
-        case 0b0001: return &(cpu->rbx);
-        case 0b0010: return &(cpu->rcx);
-        case 0b0011: return &(cpu->rdx);
-        case 0b0100: return &(cpu->rsi);
-        case 0b0101: return &(cpu->rdi);
-        case 0b0110: return &(cpu->rbp);
-        case 0b0111: return &(cpu->rsp);
-        case 0b1000: return &(cpu->r8);
-        case 0b1001: return &(cpu->r9);
-        case 0b1010: return &(cpu->r10);
-        case 0b1011: return &(cpu->r11);
-        case 0b1100: return &(cpu->r12);
-        case 0b1101: return &(cpu->r13);
-        case 0b1110: return &(cpu->r14);
-        case 0b1111: return &(cpu->r15);
+        case RAX_ENCODING: return &(cpu->rax);
+        case RBX_ENCODING: return &(cpu->rbx);
+        case RCX_ENCODING: return &(cpu->rcx);
+        case RDX_ENCODING: return &(cpu->rdx);
+        case RSI_ENCODING: return &(cpu->rsi);
+        case RDI_ENCODING: return &(cpu->rdi);
+        case RBP_ENCODING: return &(cpu->rbp);
+        case RSP_ENCODING: return &(cpu->rsp);
+        case R8_ENCODING: return &(cpu->r8);
+        case R9_ENCODING: return &(cpu->r9);
+        case R10_ENCODING: return &(cpu->r10);
+        case R11_ENCODING: return &(cpu->r11);
+        case R12_ENCODING: return &(cpu->r12);
+        case R13_ENCODING: return &(cpu->r13);
+        case R14_ENCODING: return &(cpu->r14);
+        case R15_ENCODING: return &(cpu->r15);
     }
 }
 
@@ -201,19 +201,21 @@ void execute_load_instruction(cpu* cpu, unsigned long long *operand1, unsigned l
 }
 
 int execute_arithmetic_instruction(cpu* cpu, unsigned char* instruction){
-    unsigned char operand1_encoding = instruction[0] & 0b00001111;
+    unsigned char operand1_encoding = 0;
+    memcpy_bits(&operand1_encoding, 4, instruction, 4, 4);
     unsigned long long *operand1 = decode_register(cpu, operand1_encoding);
     unsigned long long operand2 = 0;
     int instruction_length = 2; //The length if operand 2 is a register
 
-    if((instruction[1] & 0b11110000) == 0){
+    if((instruction[1] >> 4) == 0){
         //Operand 2 is a register
-        unsigned char operand2_encoding = instruction[1] & 0b00001111;
+        unsigned char operand2_encoding = 0;
+        memcpy_bits(&operand2_encoding, 4, instruction + 1, 4, 4);
         unsigned long long *temp = decode_register(cpu, operand2_encoding);
         operand2 = *temp;
     } else {
         //Operand 2 is a literal
-        unsigned char operand2_length = (instruction[1] & 0b11110000) >> 4;
+        unsigned char operand2_length = instruction[1] >> 4;
         operand2_length = operand2_length > 8 ? 8 : operand2_length;
         memcpy(&operand2, instruction + 2, operand2_length);
         instruction_length += operand2_length;
@@ -224,22 +226,22 @@ int execute_arithmetic_instruction(cpu* cpu, unsigned char* instruction){
     clear_flags(cpu);
 
     switch(operation){
-        case 0b0000:
+        case ADD_ENCODING:
             execute_add_instruction(cpu, operand1, operand2);
             break;
-        case 0b0001:
+        case SUB_ENCODING:
             execute_subtraction_instruction(cpu, operand1, operand2);
             break;
-        case 0b0010:
+        case MUL_ENCODING:
             execute_multiplication_instruction(cpu, operand1, operand2);
             break;
-        case 0b0011:
+        case DIV_ENCODING:
             execute_division_instruction(cpu, operand1, operand2);
             break;
-        case 0b0100:
+        case EQUAL_ENCODING:
             execute_assignment_instruction(cpu, operand1, operand2);
             break;
-        case 0b0101:
+        case LOAD_ENCODING:
             execute_load_instruction(cpu, operand1, operand2);
             break;
     }
@@ -254,19 +256,19 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operand1Length = 0;
     bool operand1IsRegister = false;
     int instructionLength = 2; //The length if both operands are registers
-    
-    if((instruction[0] & 0b00001100) == 0){
+    if(!check_bit(instruction[0], 4) && !check_bit(instruction[0], 5)){
         //Both operands are registers
         operand1IsRegister = true;
-        unsigned char operand1_encoding = (instruction[1] & 0b11110000) >> 4;
+        unsigned char operand1_encoding = instruction[1] >> 4;
         operand1 = *decode_register(cpu, operand1_encoding);
-        unsigned char operand2_encoding = instruction[1] & 0b00001111;
+        unsigned char operand2_encoding = 0;
+        memcpy_bits(&operand2, 4, instruction + 1, 4, 4);
         operand2 = *decode_register(cpu, operand2_encoding);
     }
     else{
-        if(instruction[0] & 0b00001000){
+        if(check_bit(instruction[0], 4)){
             //Operand 1 is a literal
-            operand1Length = ((instruction[0] & 0b00000011) << 1) + ((instruction[1] & 0b10000000) >> 7);
+            memcpy_bits(&operand1Length, 5, instruction, 6, 3);
             operand1Length = (operand1Length + 1) * 8;
             memcpy_bits(&operand1, 0, instruction + 1, 4, operand1Length);
             instructionLength += operand1Length / 8;
@@ -275,11 +277,14 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
             //Operand 1 is a register
             operand1IsRegister = true;
             operand1Length = 4;
-            operand1 = *decode_register(cpu, instruction[1] & 0b00001111);
+            unsigned char operand1_length = 0;
+            memcpy_bits(&operand1_length, 4, instruction + 1, 4, 4);
+            operand1 = *decode_register(cpu, operand1);
         }
-        if(instruction[0] & 0b00000100){
+        if(check_bit(instruction[0], 5)){
             //Operand 2 is a literal
-            unsigned char operand2Length = (instruction[1] & 0b01110000) >> 4;
+            unsigned char operand2Length = 0;
+            memcpy_bits(&operand2Length, 5, instruction + 1, 1, 3);
             operand2Length = (operand2Length + 1) * 8;
             if(operand1IsRegister) memcpy_bits(&operand2, 0, instruction + 2, 0, operand2Length);
             else memcpy_bits(&operand2, 0, instruction + 1 + (operand1Length / 8), 4, operand2Length);
@@ -287,7 +292,8 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
         }
         else{
             //Operand 2 is a register
-            unsigned char operand2_encoding = instruction[1 + (operand1Length / 8)] & 0b00001111;
+            unsigned char operand2_encoding = 0;
+            memcpy_bits(&operand2_encoding, 4, instruction + 1 + (operand1Length / 8), 4, 4);
             operand2 = *decode_register(cpu, operand2_encoding);
         }
     }
@@ -299,39 +305,40 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
 int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operation = instruction[0] >> 4;
 
-    unsigned char operand1Length = instruction[0] & 0b00001111;
+    unsigned char operand1Length = 0;
+    memcpy_bits(&operand1Length, 4, instruction, 4, 4);
 
     bool condition_met = false;
     switch(operation){
-        case 0b1000: //jo
+        case JO_ENCODING: //jo
             if(cpu->of) condition_met = true;
             break;
-        case 0b1001: //jno
+        case JNO_ENCODING: //jno
             if(!cpu->of) condition_met = true;
             break;
-        case 0b1010: //jz
+        case JZ_ENCODING: //jz
             if(cpu->zf) condition_met = true;
             break;
-        case 0b1011: //jnz
+        case JNZ_ENCODING: //jnz
             if(!cpu->zf) condition_met = true;
             break;
-        case 0b1100: //jc
+        case JC_ENCODING: //jc
             if(cpu->cf) condition_met = true;
             break;
-        case 0b1101: //jnc
+        case JNC_ENCODING: //jnc
             if(!cpu->cf) condition_met = true;
             break;
-        case 0b1110: //js
+        case JS_ENCODING: //js
             if(cpu->sf) condition_met = true;
             break;
-        case 0b1111: //jns
+        case JNS_ENCODING: //jns
             if(!cpu->sf) condition_met = true;
             break;
-        case 0b0111: //Unconditional jump
+        case JMP_ENCODING: //Unconditional jump
             condition_met = true;
             break;
     }
-    if(operation != 0b0111) cpu->clock_cycles += CLOCK_CYCLES_PER_FLAG_CHECK;
+    if(operation != JMP_ENCODING) cpu->clock_cycles += CLOCK_CYCLES_PER_FLAG_CHECK;
 
     if(condition_met){
         unsigned long long operand1;
@@ -356,15 +363,15 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
 void execute_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operation = instruction[0] >> 4;
     int instruction_length = 0;
-    if(operation < 0b0110) instruction_length = execute_arithmetic_instruction(cpu, instruction);
-    else if(operation == 0b0110) instruction_length = execute_store_instruction(cpu, instruction);
+    if(operation < STORE_ENCODING) instruction_length = execute_arithmetic_instruction(cpu, instruction);
+    else if(operation == STORE_ENCODING) instruction_length = execute_store_instruction(cpu, instruction);
     else instruction_length = execute_jump_instruction(cpu, instruction);
     cpu->rip += instruction_length;
 }
 
 void run_cpu(cpu* cpu){
     unsigned char* instruction = read_memory(cpu, cpu->rip);
-    while(*instruction != 0b11111111){
+    while(*instruction != HALT_ENCODING){
         execute_instruction(cpu, instruction);
         instruction = read_memory(cpu, cpu->rip);
     }
@@ -422,7 +429,7 @@ void encode_file(FILE* fp, cpu* cpu){
         unsigned char* encoding = encode_instruction(instruction, &encoding_length);
         if(encoding != NULL){
             //If instruction is a jump, replace the 8 0 bytes with the address of the label
-            if(encoding[0] >> 4 > 0b0110){
+            if((encoding[0] >> 4) >= JMP_ENCODING && (encoding[0] >> 4) <= JNS_ENCODING){
                 //Find the label
                 char label_location[128] = "";
                 sscanf(instruction, "%*s %s:", label_location);
@@ -443,8 +450,8 @@ void encode_file(FILE* fp, cpu* cpu){
             free(encoding);
         }
     }
-    unsigned char halt = 0b11111111;
-    write_memory(cpu, address,  &halt, 1);
+    unsigned char halt = HALT_ENCODING;
+    write_memory(cpu, address, halt, 1);
 
     //Free labels
     for(int i = 0; i < label_count; i++){

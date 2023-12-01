@@ -71,3 +71,12 @@ void memcpy_bits(void* destVoid, unsigned char dest_offset, void* srcVoid, unsig
         num_bits--;
     }
 }
+
+bool check_bit(unsigned char src, int index){
+    if(index > 7 || index < 0){
+        printf("ERROR: Cannot check %d-th bit\n", index);
+        return false;
+    }
+    unsigned char mask = 0b10000000 >> index;
+    return (src & mask) != 0;
+}
