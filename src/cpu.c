@@ -361,11 +361,32 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
 }
 
 void execute_instruction(cpu* cpu, unsigned char* instruction){
-    unsigned char operation = instruction[0] >> 4;
+    unsigned char operation = instruction[0];
     int instruction_length = 0;
-    if(operation < STORE_ENCODING) instruction_length = execute_arithmetic_instruction(cpu, instruction);
-    else if(operation == STORE_ENCODING) instruction_length = execute_store_instruction(cpu, instruction);
-    else instruction_length = execute_jump_instruction(cpu, instruction);
+    if((operation >> 3) == KERNEL_COMMAND_ENCODING){
+        if(operation == PUSH_RIP_ENCODING){
+            cpu->rsp -= 8;
+            write_memory(cpu, cpu->rsp, (unsigned char*) &(cpu->rip), 8);
+            instruction_length = 1;
+        }
+        else if(operation == HALT_ENCODING){
+            printf("Halting\n");
+            dump_cpu(*cpu);
+            instruction_length = 1;
+        }
+        else{
+            printf("ERROR: Invalid kernel command\n");
+            dump_cpu(*cpu);
+        }
+    }
+
+    else{
+        operation >>= 4;
+        if(operation < STORE_ENCODING) instruction_length = execute_arithmetic_instruction(cpu, instruction);
+        else if(operation == STORE_ENCODING) instruction_length = execute_store_instruction(cpu, instruction);
+        else instruction_length = execute_jump_instruction(cpu, instruction);
+    }
+    
     cpu->rip += instruction_length;
 }
 
