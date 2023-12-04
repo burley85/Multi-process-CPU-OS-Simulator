@@ -103,38 +103,6 @@ int current_token(Parser *p){
     return p->tokenType;
 }
 
-int parse_jump_token(Parser *p){
-    char* jump_keywords[9] = {"jmp", "jo", "jno", "jz", "jnz", "jc", "jnc", "js", "jns"};
-    
-    char token[5] = "j";
-    if(p->isFile) fscanf(p->fileOrString, "%3s", token + 1);
-    else sscanf((char*) (p->fileOrString) + p->position, "%3s", token + 1);
-
-    for(int i = 0; i < 9; i++){
-        if(strcmp(token, jump_keywords[i]) == 0){
-            if(!p->isFile) p->position += strlen(token);
-            return JMP + i;
-        }
-    }
-    return -1;
-}
-
-int parse_register_token(Parser *p){
-    char* register_names[16] = {"rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"};
-    
-    char token[5] = "r";
-    if(p->isFile) fscanf(p->fileOrString, "%3[a-zA-Z0-9]", token + 1);
-    else sscanf((char*) (p->fileOrString) + p->position, "%3[a-zA-Z0-9]", token + 1);
-    char next[5];
-    sscanf(p->fileOrString, "%c", &next);
-    for(int i = 0; i < 16; i++){
-        if(strcmp(token, register_names[i]) == 0){
-            if(!p->isFile) p->position += strlen(token + 1);
-            return RAX + i;
-        }
-    }
-    return -1;
-}
 
 int check_keywords(Parser *p){
     char* keywords[] = KEYWORD_LIST;
