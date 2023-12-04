@@ -138,16 +138,22 @@ int parse_register_token(Parser *p){
 
 int check_keywords(Parser *p){
     char* keywords[] = KEYWORD_LIST;
+    int tokens[] = KEYWORD_TOKEN_LIST;
     int keyword_count = sizeof(keywords) / sizeof(char*);
+    
+    // Make sure keywords and tokens are the same length
+    if(keyword_count != sizeof(tokens) / sizeof(int)){
+        printf("ERROR: KEYWORD_TOKEN_LIST and KEYWORD_LIST are not the same length\n");
+        exit(1);
+    }
 
     char str[64] = "";
     if(p->isFile) fscanf(p->fileOrString, "%63[a-zA-Z0-9]", str);
     else sscanf((char*) (p->fileOrString) + p->position, "%63[a-zA-Z0-9]", str);
-    printf("Checking keyword: %s\n", str);
+
     for(int i = 0; i < keyword_count; i++){
         if(strcmp(str, keywords[i]) == 0){
             if(!p->isFile) p->position += strlen(str);
-            int tokens[] = KEYWORD_TOKEN_LIST;
             return tokens[i];
         }
     }
@@ -212,6 +218,6 @@ int next_token(Parser *p){
             else p->position--;
             p->tokenType = check_keywords(p);
     }
-
+    if(p->tokenType == -1) p->tokenType = LABEL;
     return p->tokenType;
 }

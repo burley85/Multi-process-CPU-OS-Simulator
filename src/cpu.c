@@ -363,10 +363,13 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
 void execute_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operation = instruction[0];
     int instruction_length = 0;
+    dump_cpu(*cpu);
     if((operation >> 3) == KERNEL_COMMAND_ENCODING){
         if(operation == PUSH_RIP_ENCODING){
             cpu->rsp -= 8;
-            write_memory(cpu, cpu->rsp, (unsigned char*) &(cpu->rip), 8);
+            char kernel_command_length = 0;
+            if(instruction[1] << 4 == JMP_ENCODING) kernel_command_length = 10;
+            write_memory(cpu, cpu->rsp, (unsigned char*) &(cpu->rip) + kernel_command_length, 8);
             instruction_length = 1;
         }
         else if(operation == HALT_ENCODING){
@@ -449,15 +452,18 @@ void encode_file(FILE* fp, cpu* cpu){
 
         unsigned char* encoding = encode_instruction(instruction, &encoding_length);
         if(encoding != NULL){
-            //If instruction is a jump, replace the 8 0 bytes with the address of the label
-            if((encoding[0] >> 4) >= JMP_ENCODING && (encoding[0] >> 4) <= JNS_ENCODING && !(encoding[0] == HALT_ENCODING)){
+            //If instruction is a jump or a call, replace the 8 0 bytes with the address of the label
+            bool instruction_is_jump = ((encoding[0] >> 4) >= JMP_ENCODING && (encoding[0] >> 4) <= JNS_ENCODING && !(encoding[0] >> 3 == KERNEL_COMMAND_ENCODING));
+            bool instruction_is_call = (encoding[0] == PUSH_RIP_ENCODING) && (encoding[1] >> 4) == JMP_ENCODING;
+            if(instruction_is_jump || instruction_is_call){
                 //Find the label
                 char label_location[128] = "";
-                sscanf(instruction, "%*s %s:", label_location);
+                sscanf(instruction, "%*s %s", label_location);
                 int i;
                 for(i = 0; i < label_count; i++){
                     if(strcmp(labels[i], label_location) == 0){
-                        memcpy(encoding + 1, &label_addresses[i], 8);
+                        if(instruction_is_jump) memcpy(encoding + 1, &label_addresses[i], 8);
+                        else if(instruction_is_call) memcpy(encoding + 2, &label_addresses[i], 8);
                         break;
                     }
                 }

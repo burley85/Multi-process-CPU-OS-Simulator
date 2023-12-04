@@ -332,6 +332,29 @@ unsigned char* encode_pop(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
+unsigned char* encode_call(Parser *p, int* encoding_length){
+    int operand = next_token(p);
+    if(operand != LABEL){
+        printf("ERROR: Expected label, got %s\n", current_token_str(p));
+        return NULL;
+    }
+
+    *encoding_length = 10;
+    unsigned char* encoded_instruction = malloc(10);
+
+    //Encode pushing rip to stack
+    encoded_instruction[0] = PUSH_RIP_ENCODING;
+
+    //Encode unconditional jump to label
+    //Set first 4 bits to the jump operation encoding
+    encoded_instruction[1] = JMP_ENCODING << 4;
+    //Set next 4 bits to 1000 to indicate that operand is a 8 byte literal
+    encoded_instruction[1] += 8;
+    //Set next 8 bytes to 0, which will be replaced with the address of the label
+    memset(encoded_instruction + 2, 0, 8);
+    return encoded_instruction;
+}
+
 unsigned char* encode_halt(Parser *p, int* encoding_length){
     *encoding_length = 1;
     unsigned char* encoded_instruction = malloc(1);
@@ -361,6 +384,7 @@ unsigned char* encode_instruction(char *instruction, int* encoding_length) {
     if(token == POP) return encode_pop(&p, encoding_length);
     if(token == PUSH) return encode_push(&p, encoding_length);
     if(token == HALT) return encode_halt(&p, encoding_length);
+    if(token == CALL) return encode_call(&p, encoding_length);
 
     if(token != LABEL){
         printf("ERROR: Expected register, jump, label, halt, or LPAREN, got %s\n", current_token_str(&p));
