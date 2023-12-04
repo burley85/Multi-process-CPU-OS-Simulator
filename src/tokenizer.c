@@ -103,7 +103,6 @@ int current_token(Parser *p){
     return p->tokenType;
 }
 
-
 int check_keywords(Parser *p){
     char* keywords[] = KEYWORD_LIST;
     int tokens[] = KEYWORD_TOKEN_LIST;

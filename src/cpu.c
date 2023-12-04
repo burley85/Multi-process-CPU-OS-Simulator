@@ -262,7 +262,7 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
         unsigned char operand1_encoding = instruction[1] >> 4;
         operand1 = *decode_register(cpu, operand1_encoding);
         unsigned char operand2_encoding = 0;
-        memcpy_bits(&operand2, 4, instruction + 1, 4, 4);
+        memcpy_bits(&operand2_encoding, 4, instruction + 1, 4, 4);
         operand2 = *decode_register(cpu, operand2_encoding);
     }
     else{
@@ -363,14 +363,37 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
 void execute_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operation = instruction[0];
     int instruction_length = 0;
-    dump_cpu(*cpu);
+
     if((operation >> 3) == KERNEL_COMMAND_ENCODING){
         if(operation == PUSH_RIP_ENCODING){
             cpu->rsp -= 8;
-            char kernel_command_length = 0;
-            if(instruction[1] << 4 == JMP_ENCODING) kernel_command_length = 10;
-            write_memory(cpu, cpu->rsp, (unsigned char*) &(cpu->rip) + kernel_command_length, 8);
+            char kernel_command_length = 1;
+            if(instruction[1] >> 4 == JMP_ENCODING){
+                unsigned char jmp_dest_length = 0;
+                memcpy_bits(&jmp_dest_length, 4, instruction + 1, 4, 4);
+                if(jmp_dest_length == 0) kernel_command_length += 2;
+                else kernel_command_length += 1 + jmp_dest_length;
+            }
+            else{
+                printf("ERROR: Invalid kernel command. Expected JMP after PUSH_RIP\n");
+                dump_cpu(*cpu);
+                exit(1);
+            }
+            unsigned long long new_rip = cpu->rip + kernel_command_length;
+            write_memory(cpu, cpu->rsp, (unsigned char*) &new_rip, 8);
+            printf("Return address is stored at address %llx\n", cpu->rsp);
             instruction_length = 1;
+        }
+        else if(operation == POP_RIP_ENCODING){
+            unsigned long long new_rip;
+            printf("Return address is stored at address %llx\n", cpu->rsp);
+            unsigned char* mem = read_memory(cpu, cpu->rsp);
+            memcpy(&new_rip, mem, 8);
+            printf("Returning to instruction at address %llx\n", new_rip);
+            assign(cpu, &(cpu->rip), new_rip);
+            cpu->rsp += 8;
+            dump_cpu(*cpu);
+            instruction_length = 0;
         }
         else if(operation == HALT_ENCODING){
             printf("Halting\n");

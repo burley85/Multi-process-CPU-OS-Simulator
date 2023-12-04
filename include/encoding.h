@@ -117,6 +117,7 @@ They are encoded as follows:
 
 Kernel commands:
     11111000: push rip to stack
+    11111001: pop rip from stack
     11111111: halt
 
 Aliases:
@@ -167,6 +168,7 @@ Aliases:
 
 #define KERNEL_COMMAND_ENCODING 0b11111
 #define PUSH_RIP_ENCODING 0b11111000
+#define POP_RIP_ENCODING 0b11111001
 #define HALT_ENCODING 0b11111111
 
 unsigned char* encode_instruction(char *instruction, int* encoding_length);
