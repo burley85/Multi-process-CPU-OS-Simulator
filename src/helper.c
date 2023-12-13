@@ -1,5 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 void print_bin(unsigned char* buffer, int length){
     for(int i = 0; i < length; i++){
@@ -79,4 +81,43 @@ bool check_bit(unsigned char src, int index){
     }
     unsigned char mask = 0b10000000 >> index;
     return (src & mask) != 0;
+}
+
+#define BUFFER_START_SIZE 2
+#define BUFFER_GROWTH_FACTOR 2
+
+char* fgetline(FILE* fp, int* buffer_size){
+    *buffer_size = BUFFER_START_SIZE;
+    char* buffer = malloc(*buffer_size);
+    memset(buffer, 0, *buffer_size);
+
+    if(buffer == NULL){
+        printf("ERROR: Could not allocate memory for buffer\n");
+        return NULL;
+    }
+
+    while(1){
+        char* rval = fgets(buffer + strlen(buffer), *buffer_size - strlen(buffer), fp);
+
+        if(ferror(fp)){
+            printf("ERROR: Could not read line\n");
+            free(buffer);
+            *buffer_size = 0;
+            return NULL;
+        }
+
+        if(feof(fp) || buffer[strlen(buffer) - 1] == '\n') return buffer;
+
+        *buffer_size *= BUFFER_GROWTH_FACTOR;
+        char* new_buffer = realloc(buffer, *buffer_size);
+        if(new_buffer == NULL){
+            printf("ERROR: Could not reallocate memory for buffer\n");
+            free(buffer);
+            *buffer_size = 0;
+            return NULL;
+        }
+        buffer = new_buffer;
+    }
+
+    return buffer;
 }
