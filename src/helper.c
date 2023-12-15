@@ -3,6 +3,89 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "helper.h"
+
+#define DYNAMIC_ARRAY_MINIMUM_CAPACITY 2
+#define DYNAMIC_ARRAY_GROWTH_FACTOR 2
+DynamicArray createDynamicArray(int capacity, int item_size, bool free_items){
+    //Check validity of defined values
+    if(DYNAMIC_ARRAY_MINIMUM_CAPACITY < 1){
+        printf("ERROR: DYNAMIC_ARRAY_DEFAULT_CAPACITY must be at least 1\n");
+        exit(1);
+    }
+    if(DYNAMIC_ARRAY_GROWTH_FACTOR < 1){
+        printf("ERROR: DYNAMIC_ARRAY_GROWTH_FACTOR must be at least 1\n");
+        exit(1);
+    }
+    int capacity_after_first_grow = DYNAMIC_ARRAY_GROWTH_FACTOR * DYNAMIC_ARRAY_MINIMUM_CAPACITY;
+    if(capacity_after_first_grow <= DYNAMIC_ARRAY_MINIMUM_CAPACITY){
+        printf("ERROR: DynamicArray will never grow with the define values of DYNAMIC_ARRAY_GROWTH_FACTOR and DYNAMIC_ARRAY_DEFAULT_CAPACITY\n");
+        exit(1);
+    }
+
+    DynamicArray a;
+    
+    a.item_size = item_size;
+    a.size = 0;
+    a.free_items = free_items;
+    if(capacity < DYNAMIC_ARRAY_MINIMUM_CAPACITY) capacity = DYNAMIC_ARRAY_MINIMUM_CAPACITY;
+
+    a.array = malloc(capacity * item_size);
+    if(a.array == NULL){
+        printf("ERROR: Could not allocate memory for array\n");
+        a.capacity = 0;
+    }
+    else a.capacity = capacity;
+
+    return a;
+}
+
+void destroyDynamicArray(DynamicArray* a){
+    if(a->array == NULL) return;
+    
+    if(a->free_items){
+        for(int i = 0; i < a->size; i++){
+            free(((char*) a->array) + (i * a->item_size));
+        }
+    }
+    free(a->array);
+
+    a->array = NULL;
+    a->size = 0;
+    a->capacity = 0;
+}
+
+void* getDynamicArray(DynamicArray* a, int index){
+    if(a < 0 || index >= a->size){
+        printf("ERROR: Index %d out of bounds\n", index);
+        return NULL;
+    }
+    return ((char*) a->array) + (index * a->item_size);
+}
+
+void* appendDynamicArray(DynamicArray* a, void* item){
+    if(a == NULL || a->array == NULL || item == NULL){
+        printf("ERROR: Failed to append to DynamicArray due to NULL pointer \n");
+        return NULL;
+    }
+
+    if(a->size == a->capacity){
+        int new_capacity = a->capacity * DYNAMIC_ARRAY_GROWTH_FACTOR;
+        void* new_array = realloc(a->array, new_capacity * a->item_size);
+        if(new_array == NULL){
+            printf("ERROR: Could not reallocate memory for array\n");
+            return NULL;
+        }
+        a->array = new_array;
+        a->capacity = new_capacity;
+    }
+
+    void* item_location = ((char*) a->array) + (a->size * a->item_size);
+    memcpy(item_location, item, a->item_size);
+
+    return item_location;
+}
+
 void print_bin(unsigned char* buffer, int length){
     for(int i = 0; i < length; i++){
         for(int j = 0; j < 8; j++){
