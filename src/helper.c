@@ -170,9 +170,9 @@ bool check_bit(unsigned char src, int index){
 #define BUFFER_GROWTH_FACTOR 2
 
 char* fgetline(FILE* fp, int* buffer_size){
-    *buffer_size = BUFFER_START_SIZE;
-    char* buffer = malloc(*buffer_size);
-    memset(buffer, 0, *buffer_size);
+    int temp_size = BUFFER_START_SIZE;
+    char* buffer = malloc(temp_size);
+    memset(buffer, 0, temp_size);
 
     if(buffer == NULL){
         printf("ERROR: Could not allocate memory for buffer\n");
@@ -180,27 +180,28 @@ char* fgetline(FILE* fp, int* buffer_size){
     }
 
     while(1){
-        char* rval = fgets(buffer + strlen(buffer), *buffer_size - strlen(buffer), fp);
+        char* rval = fgets(buffer + strlen(buffer), temp_size - strlen(buffer), fp);
 
         if(ferror(fp)){
             printf("ERROR: Could not read line\n");
             free(buffer);
-            *buffer_size = 0;
+            if(buffer_size != NULL) *buffer_size = 0;
             return NULL;
         }
 
-        if(feof(fp) || buffer[strlen(buffer) - 1] == '\n') return buffer;
+        if(feof(fp) || buffer[strlen(buffer) - 1] == '\n') break;
 
-        *buffer_size *= BUFFER_GROWTH_FACTOR;
-        char* new_buffer = realloc(buffer, *buffer_size);
+        temp_size *= BUFFER_GROWTH_FACTOR;
+        char* new_buffer = realloc(buffer, temp_size);
         if(new_buffer == NULL){
             printf("ERROR: Could not reallocate memory for buffer\n");
             free(buffer);
-            *buffer_size = 0;
+            if(buffer_size != NULL) *buffer_size = 0;
             return NULL;
         }
         buffer = new_buffer;
     }
 
+    if(buffer_size != NULL) *buffer_size = temp_size;
     return buffer;
 }
