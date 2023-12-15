@@ -169,7 +169,7 @@ bool check_bit(unsigned char src, int index){
 #define BUFFER_START_SIZE 2
 #define BUFFER_GROWTH_FACTOR 2
 
-char* fgetline(FILE* fp, int* buffer_size){
+char* fgettrimmedline(FILE* fp, int* buffer_size){
     int temp_size = BUFFER_START_SIZE;
     char* buffer = malloc(temp_size);
     memset(buffer, 0, temp_size);
@@ -201,6 +201,16 @@ char* fgetline(FILE* fp, int* buffer_size){
         }
         buffer = new_buffer;
     }
+
+    //Trim the whitespace from the beginning of the buffer
+    int start = 0;
+    while(buffer[start] == ' ' || buffer[start] == '\t' || buffer[start] == '\n') start++;
+    if(start > 0) memmove(buffer, buffer + start, strlen(buffer) - start + 1);
+
+    //Trim the whitespace from the end of the buffer
+    int end = strlen(buffer) - 1;
+    while(buffer[end] == ' ' || buffer[end] == '\t' || buffer[end] == '\n') end--;
+    buffer[end + 1] = '\0';
 
     if(buffer_size != NULL) *buffer_size = temp_size;
     return buffer;
