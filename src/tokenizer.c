@@ -115,8 +115,8 @@ int check_keywords(Parser *p){
     }
 
     char str[64] = "";
-    if(p->isFile) fscanf(p->fileOrString, "%63[a-zA-Z0-9]", str);
-    else sscanf((char*) (p->fileOrString) + p->position, "%63[a-zA-Z0-9]", str);
+    if(p->isFile) fscanf(p->fileOrString, "%63[a-zA-Z0-9_]", str);
+    else sscanf((char*) (p->fileOrString) + p->position, "%63[a-zA-Z0-9_]", str);
 
     for(int i = 0; i < keyword_count; i++){
         if(strcmp(str, keywords[i]) == 0){

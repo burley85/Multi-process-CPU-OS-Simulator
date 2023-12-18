@@ -45,8 +45,7 @@ void destroyDynamicArray(DynamicArray* a){
     
     if(a->free_items){
         for(int i = 0; i < a->size; i++){
-            char* item_ptr = *(((char**) a->array) + (i * a->item_size));
-            free(item_ptr);
+            free(*((char**)getDynamicArray(a, i)));
         }
     }
     free(a->array);
