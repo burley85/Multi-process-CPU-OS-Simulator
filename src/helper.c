@@ -45,7 +45,8 @@ void destroyDynamicArray(DynamicArray* a){
     
     if(a->free_items){
         for(int i = 0; i < a->size; i++){
-            free(((char*) a->array) + (i * a->item_size));
+            char* item_ptr = *(((char**) a->array) + (i * a->item_size));
+            free(item_ptr);
         }
     }
     free(a->array);
@@ -82,6 +83,8 @@ void* appendDynamicArray(DynamicArray* a, void* item){
 
     void* item_location = ((char*) a->array) + (a->size * a->item_size);
     memcpy(item_location, item, a->item_size);
+
+    a->size++;
 
     return item_location;
 }
