@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define RAM_SIZE 128
+#define RAM_SIZE 1024
 
 typedef struct mmu{
     unsigned long long base;

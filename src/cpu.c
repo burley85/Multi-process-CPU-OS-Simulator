@@ -381,18 +381,14 @@ void execute_instruction(cpu* cpu, unsigned char* instruction){
             }
             unsigned long long new_rip = cpu->rip + kernel_command_length;
             write_memory(cpu, cpu->rsp, (unsigned char*) &new_rip, 8);
-            printf("Return address is stored at address %llx\n", cpu->rsp);
             instruction_length = 1;
         }
         else if(operation == POP_RIP_ENCODING){
             unsigned long long new_rip;
-            printf("Return address is stored at address %llx\n", cpu->rsp);
             unsigned char* mem = read_memory(cpu, cpu->rsp);
             memcpy(&new_rip, mem, 8);
-            printf("Returning to instruction at address %llx\n", new_rip);
             assign(cpu, &(cpu->rip), new_rip);
             cpu->rsp += 8;
-            dump_cpu(*cpu);
             instruction_length = 0;
         }
         else if(operation == HALT_ENCODING){
@@ -430,12 +426,11 @@ FILE* preprocess_file(FILE* fp){
     FILE* temp = tmpfile();
     if(temp == NULL){
         printf("ERROR: Failed to create temporary file\n");
-        scanf("%*c");
         exit(1);
     }
 
-    DynamicArray keys = createDynamicArray(0, sizeof(char**), true);
-    DynamicArray values = createDynamicArray(0, sizeof(char**), true);
+    DynamicArray keys = createDynamicArray(0, sizeof(char*), true);
+    DynamicArray values = createDynamicArray(0, sizeof(char*), true);
 
     while(!feof(fp)){
         char* line = fgettrimmedline(fp, NULL);
@@ -521,46 +516,61 @@ FILE* preprocess_file(FILE* fp){
                 }
             }
             fprintf(temp, "\n");
+            free(str);
         }
     }
 
     destroyDynamicArray(&keys);
     destroyDynamicArray(&values);
-
+    fclose(fp);
+    
+    rewind(temp);
     return temp;
 }
 
 void encode_file(FILE* fp, cpu* cpu){
-    unsigned char* labels[128];
-    unsigned long long label_addresses[128];
-    int label_count = 0;
+    fp = preprocess_file(fp);
+    if(fp == NULL){
+        printf("ERROR: Failed to preprocess file\n");
+        exit(1);
+    }
+
+    DynamicArray labels = createDynamicArray(0, sizeof(char*), true);
+    DynamicArray label_addresses = createDynamicArray(0, sizeof(unsigned long long), false);
 
     //Initial pass to look for labels and find their addresses
     unsigned long long address = cpu->mmu.base;
     while(!feof(fp)){
-        char instruction[128] = "";
-        char terminator = '\0';
-        fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
-        if(strlen(instruction) == 0) fscanf(fp, " %c", &terminator);
+        char* instruction = fgettrimmedline(fp, NULL);
+        if(instruction == NULL) exit(1);
 
-        //Check if the line is a label (next character is a colon)
-        if(terminator == ':'){
-            if(strlen(instruction) == 0){
+        int instruction_length = strlen(instruction);
+
+        //Check if the line is a label (ends with a colon)
+        if(instruction[instruction_length - 1] == ':'){
+            //Make sure label fits the following regex: [A-Za-z_]+:
+            if(instruction_length == 1){
                 printf("ERROR: Label cannot be empty\n");
-                return;
+                exit(1);
             }
+            for(int i = 0; i < instruction_length - 1; i++){
+                if((instruction[i] < 'A' || instruction[i] > 'Z') && (instruction[i] < 'a' || instruction[i] > 'z') && instruction[i] != '_'){
+                    printf("ERROR: Label '%s' contains invalid characters\n", instruction);
+                    exit(1);
+                }
+            }
+
             char* label = malloc(strlen(instruction) + 1);
-            strcpy(label, instruction);
-            //Get rid of whitespace at the end of the label
-            while(label[strlen(label) - 1] == ' ' || label[strlen(label) - 1] == '\t') label[strlen(label) - 1] = '\0';
+            memset(label, 0, strlen(instruction) + 1);
+            strncpy(label, instruction, instruction_length);
+            label[instruction_length - 1] = '\0';
             //Add the label to the symbol table
-            labels[label_count] = label;
-            label_addresses[label_count] = address;
-            label_count++;
+            if(appendDynamicArray(&labels, &label) == NULL || appendDynamicArray(&label_addresses, &address) == NULL){
+                printf("ERROR: Failed to add label to symbol table\n");
+                exit(1);
+            }
         }
         else{
-            if(terminator == ';') fscanf(fp, "%*[^\n]");
-            if(strlen(instruction) == 0) continue;
             int encoding_length;
             unsigned char* encoding = encode_instruction(instruction, &encoding_length);
             address += encoding_length;
@@ -570,13 +580,9 @@ void encode_file(FILE* fp, cpu* cpu){
 
     fseek(fp, 0, SEEK_SET);
     address = 0;
+
     while(!feof(fp)){
-        char instruction[128] = "";
-        char terminator = '\0';
-        fscanf(fp, " %128[^;:\n]%c", &instruction, &terminator);
-        if(strlen(instruction) == 0) fscanf(fp, " %c", &terminator);
-        if(terminator == ':') continue;
-        if(terminator == ';') fscanf(fp, "%*[^\n]");
+        char* instruction = fgettrimmedline(fp, NULL);
         int encoding_length = 0;
 
         unsigned char* encoding = encode_instruction(instruction, &encoding_length);
@@ -586,18 +592,22 @@ void encode_file(FILE* fp, cpu* cpu){
             bool instruction_is_call = (encoding[0] == PUSH_RIP_ENCODING) && (encoding[1] >> 4) == JMP_ENCODING;
             if(instruction_is_jump || instruction_is_call){
                 //Find the label
-                char label_location[128] = "";
-                sscanf(instruction, "%*s %s", label_location);
+                char label = malloc(strlen(instruction) + 1);
+                memset(label, 0, strlen(instruction) + 1);
+                sscanf(instruction, "%*s %s", label);
                 int i;
-                for(i = 0; i < label_count; i++){
-                    if(strcmp(labels[i], label_location) == 0){
-                        if(instruction_is_jump) memcpy(encoding + 1, &label_addresses[i], 8);
-                        else if(instruction_is_call) memcpy(encoding + 2, &label_addresses[i], 8);
+                for(i = 0; i < labels.size; i++){
+                    char* label_test = *((char**) getDynamicArray(&labels, i));
+
+                    if(strcmp(label_test, label) == 0){
+                        unsigned long long label_address = *((unsigned long long*) getDynamicArray(&label_addresses, i));
+                        if(instruction_is_jump) memcpy(encoding + 1, &label_address, 8);
+                        else if(instruction_is_call) memcpy(encoding + 2, &label_address, 8);
                         break;
                     }
                 }
-                if(i == label_count){
-                    printf("ERROR: Label %s not found\n", label_location);
+                if(i == labels.size){
+                    printf("ERROR: Label %s not found\n", label);
                     return;
                 }
             }
@@ -610,7 +620,6 @@ void encode_file(FILE* fp, cpu* cpu){
     write_memory(cpu, address, &halt, 1);
 
     //Free labels
-    for(int i = 0; i < label_count; i++){
-        free(labels[i]);
-    }
+    destroyDynamicArray(&labels);
+    destroyDynamicArray(&label_addresses);
 }
