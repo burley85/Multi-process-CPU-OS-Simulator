@@ -424,6 +424,112 @@ void run_cpu(cpu* cpu){
     }
 }
 
+//Replaces #define keys with their values, and removes comments
+//Returns a pointer to a temporary file containing the preprocessed code
+FILE* preprocess_file(FILE* fp){
+    FILE* temp = tmpfile();
+    if(temp == NULL){
+        printf("ERROR: Failed to create temporary file\n");
+        scanf("%*c");
+        exit(1);
+    }
+
+    DynamicArray keys = createDynamicArray(0, sizeof(char**), true);
+    DynamicArray values = createDynamicArray(0, sizeof(char**), true);
+
+    while(!feof(fp)){
+        char* line = fgettrimmedline(fp, NULL);
+        if(line == NULL) exit(1);
+
+        //Replace any comments with a null terminator
+        char* replace = strchr(line, ';');
+        if(replace != NULL){
+            replace--;
+            while(*replace == ' ' || *replace == '\t' ) replace--;
+            *(replace + 1) = '\0';
+        }
+
+        //Ignore empty lines
+        if(strlen(line) == 0){
+            free(line);
+            continue;
+        }
+
+        //Check if the line is a #define
+        if(strncmp(line, "#define ", 8) == 0){
+            char* key = malloc(strlen(line) + 1);
+            char* value = malloc(strlen(line) + 1);
+            memset(key, 0, strlen(line) + 1);
+            memset(value, 0, strlen(line) + 1);
+
+            //Get key (format: [A-Za-z_][A-Za-z_0-9]*) and value (rest of line)
+            sscanf(line, "#define %[A-Za-z0-9_] %[^\n]", key, value);
+            if(strlen(key) == 0 || (key[0] >= '0' && key[0] <= '9')){
+                printf("ERROR: Invalid preprocessor command '%s'\n", line);
+                exit(1);
+            }
+
+            if(appendDynamicArray(&keys, &key) == NULL || appendDynamicArray(&values, &value) == NULL){
+                printf("ERROR: Failed to add key-value pair to symbol table\n");
+                exit(1);
+            }
+            free(line);
+            continue;
+        }
+        
+        else{
+            //Iterate through each word in the line and check if it is a key
+            char* str = malloc(strlen(line) + 1);
+            memset(str, 0, strlen(line) + 1);
+            int str_len = 0;
+            int line_pos = 0;
+
+            while(line_pos < strlen(line)){
+
+                char first_char = line[line_pos];
+                //If first character is in [A-Za-Z0-9_] then read until next character not in [A-Za-Z0-9_]
+                if((first_char >= 'A' && first_char <= 'Z') || (first_char >= 'a' && first_char <= 'z') || first_char == '_'){
+                    sscanf(line + line_pos, "%[A-Za-z0-9_]", str);
+                    line_pos += strlen(str);
+                    
+                    //Check if the string is a key (can't be a key if first character is in [0-9])
+                    if(!(str[0] >= '0' && str[0] <= '9')){  
+                        for(int i = 0; i < keys.size; i++){
+                            char* key = *((char**) getDynamicArray(&keys, i));
+                            if(strcmp(key, str) == 0){
+                                free(str);
+                                str = *((char**) getDynamicArray(&values, i));
+                                break;
+                            }
+                        }
+                    }
+                    //Print the string to the file
+                    fprintf(temp, "%s", str);
+                }
+                //If first character is in [0-9] then read until next character not in [A-Za-z0-9_]
+                else if(first_char >= '0' && first_char <= '9'){
+                    sscanf(line + line_pos, "%[A-Za-z0-9_]", str);
+                    line_pos += strlen(str);
+
+                    //Print the string to the file
+                    fprintf(temp, "%s", str);
+                }
+                //Otherwise, print that character to the file
+                else{
+                    fprintf(temp, "%c", first_char);
+                    line_pos++;
+                }
+            }
+            fprintf(temp, "\n");
+        }
+    }
+
+    destroyDynamicArray(&keys);
+    destroyDynamicArray(&values);
+
+    return temp;
+}
+
 void encode_file(FILE* fp, cpu* cpu){
     unsigned char* labels[128];
     unsigned long long label_addresses[128];
