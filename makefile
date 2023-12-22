@@ -3,18 +3,22 @@ CXX_FLAGS := -ggdb
 
 BIN     := bin
 SRC     := src
+MONITOR_SRC := monitor_src
 INCLUDE := include
 LIBRARIES   := -lwsock32
-EXECUTABLE  := sim
+EXECUTABLE  := sim.exe
+MONITOR_EXECUTABLE  := cpu_monitor.exe
 
-all: $(BIN)/$(EXECUTABLE)
+all: $(BIN)/$(EXECUTABLE) $(BIN)/$(MONITOR_EXECUTABLE)
 
-run: clean all
-	clear
-	./$(BIN)/$(EXECUTABLE)
+run: all
+	py startup.py
 
-$(BIN)/$(EXECUTABLE): $(SRC)/*.c
-	$(CXX) $(CXX_FLAGS) -I $(INCLUDE)  $^ $(LIBRARIES) -o $@
+$(BIN)/$(EXECUTABLE): $(SRC)/*.c $(INCLUDE)/*.h
+	$(CXX) $(CXX_FLAGS) -I $(INCLUDE) -D COMPILE_MAIN_EXE $^ $(LIBRARIES) -o $@
 	
+$(BIN)/$(MONITOR_EXECUTABLE): $(SRC)/*.c $(INCLUDE)/*.h
+	$(CXX) $(CXX_FLAGS) -I $(INCLUDE) -D COMPILE_MONITOR_EXE $^ $(LIBRARIES) -o $@
+
 clean:
-	-rm $(BIN)/*
+	-del /Q /F $(BIN)\*
