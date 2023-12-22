@@ -2,39 +2,47 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <Windows.h>
 
 #include "cpu.h"
 #include "helper.h"
 #include "encoding.h"
 
-cpu init_cpu(){
-    cpu c;
-    c.rax = 0;
-    c.rbx = 0;
-    c.rcx = 0;
-    c.rdx = 0;
-    c.rsi = 0;
-    c.rdi = 0;
-    c.rbp = 0;
-    c.rsp = 0;
-    c.r8 = 0;
-    c.r9 = 0;
-    c.r10 = 0;
-    c.r11 = 0;
-    c.r12 = 0;
-    c.r13 = 0;
-    c.r14 = 0;
-    c.r15 = 0;
-    c.of = false;
-    c.sf = false;
-    c.zf = false;
-    c.cf = false;
-    c.rip = 0;
-    memset(c.memory, 0, RAM_SIZE);
-    c.mmu.base = 0;
-    c.mmu.limit = 0;
-    c.clock_cycles = 0;
-    return c;
+#define OBJ_NAME "SimCPUObj"
+cpu* init_cpu(){
+    int maxSizeHigh = sizeof(cpu) >> 32;
+    int maxSizeLow = sizeof(cpu) - maxSizeHigh;
+    HANDLE hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, maxSizeHigh, maxSizeLow, OBJ_NAME);
+
+    if(hMapFile == NULL){
+        printf("ERROR: Failed to share cpu object\n");
+        exit(1);
+    }
+
+    cpu* cpuPtr = (cpu*) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(cpu));
+    if(cpuPtr == NULL){
+        printf("ERROR: Failed to share cpu object\n");
+        exit(1);
+    }
+
+    memset(cpuPtr, 0, sizeof(cpu));
+    return cpuPtr;
+}
+
+cpu* get_cpu(){
+    HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, 0, OBJ_NAME);
+    if(hMapFile == NULL){
+        printf("ERROR: Failed to get shared cpu object\n");
+        exit(1);
+    }
+
+    cpu* cpuPtr = (cpu*) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, sizeof(cpu));
+    if(cpuPtr == NULL){
+        printf("ERROR: Failed to share cpu object\n");
+        exit(1);
+    }
+
+    return cpuPtr;
 }
 
 void dump_cpu(cpu cpu){
@@ -592,7 +600,7 @@ void encode_file(FILE* fp, cpu* cpu){
             bool instruction_is_call = (encoding[0] == PUSH_RIP_ENCODING) && (encoding[1] >> 4) == JMP_ENCODING;
             if(instruction_is_jump || instruction_is_call){
                 //Find the label
-                char label = malloc(strlen(instruction) + 1);
+                char* label = malloc(strlen(instruction) + 1);
                 memset(label, 0, strlen(instruction) + 1);
                 sscanf(instruction, "%*s %s", label);
                 int i;
