@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define RAM_SIZE 1024
+#define RAM_SIZE 1048576
 
 typedef struct mmu{
     unsigned long long base;
@@ -42,7 +42,8 @@ typedef struct cpu{
     unsigned long long clock_cycles;
 } cpu;
 
-cpu init_cpu();
+cpu* init_cpu();
+cpu* get_cpu();
 void dump_cpu(cpu cpu);
 void run_cpu(cpu* cpu);
 void encode_file(FILE* fp, cpu* cpu);

@@ -2,6 +2,7 @@
 #define HELPER_H
 
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef struct DynamicArray{
     void* array;
