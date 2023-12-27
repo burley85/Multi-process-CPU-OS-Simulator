@@ -217,3 +217,15 @@ char* fgettrimmedline(FILE* fp, int* buffer_size){
     if(buffer_size != NULL) *buffer_size = temp_size;
     return buffer;
 }
+
+//Returns a char with only the last n bits of c
+char last_n_bits(unsigned char c, int n) {
+    char mask = 0b11111111;
+    mask >>= (8 - n);
+    return c & mask;
+}
+
+//Returns a char with the first n bits of c shifted to the right
+char first_n_bits(unsigned char c, int n) {
+    return c >> (8 - n);
+}
