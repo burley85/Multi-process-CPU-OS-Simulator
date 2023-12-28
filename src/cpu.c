@@ -125,7 +125,7 @@ void assign(cpu* cpu, unsigned long long* operand1, unsigned long long operand2)
 }
 
 //Return the pointer to register encoded in register_encoding
-unsigned long long* decode_register(cpu* cpu, unsigned char register_encoding){
+unsigned long long* get_register(cpu* cpu, unsigned char register_encoding){
     switch(register_encoding){
         case RAX_ENCODING: return &(cpu->rax);
         case RBX_ENCODING: return &(cpu->rbx);
@@ -211,7 +211,7 @@ void execute_load_instruction(cpu* cpu, unsigned long long *operand1, unsigned l
 int execute_arithmetic_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operand1_encoding = 0;
     memcpy_bits(&operand1_encoding, 4, instruction, 4, 4);
-    unsigned long long *operand1 = decode_register(cpu, operand1_encoding);
+    unsigned long long *operand1 = get_register(cpu, operand1_encoding);
     unsigned long long operand2 = 0;
     int instruction_length = 2; //The length if operand 2 is a register
 
@@ -219,7 +219,7 @@ int execute_arithmetic_instruction(cpu* cpu, unsigned char* instruction){
         //Operand 2 is a register
         unsigned char operand2_encoding = 0;
         memcpy_bits(&operand2_encoding, 4, instruction + 1, 4, 4);
-        unsigned long long *temp = decode_register(cpu, operand2_encoding);
+        unsigned long long *temp = get_register(cpu, operand2_encoding);
         operand2 = *temp;
     } else {
         //Operand 2 is a literal
@@ -268,10 +268,10 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
         //Both operands are registers
         operand1IsRegister = true;
         unsigned char operand1_encoding = instruction[1] >> 4;
-        operand1 = *decode_register(cpu, operand1_encoding);
+        operand1 = *get_register(cpu, operand1_encoding);
         unsigned char operand2_encoding = 0;
         memcpy_bits(&operand2_encoding, 4, instruction + 1, 4, 4);
-        operand2 = *decode_register(cpu, operand2_encoding);
+        operand2 = *get_register(cpu, operand2_encoding);
     }
     else{
         if(check_bit(instruction[0], 4)){
@@ -287,7 +287,7 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
             operand1Length = 4;
             unsigned char operand1_length = 0;
             memcpy_bits(&operand1_length, 4, instruction + 1, 4, 4);
-            operand1 = *decode_register(cpu, operand1);
+            operand1 = *get_register(cpu, operand1);
         }
         if(check_bit(instruction[0], 5)){
             //Operand 2 is a literal
@@ -302,7 +302,7 @@ int execute_store_instruction(cpu* cpu, unsigned char* instruction){
             //Operand 2 is a register
             unsigned char operand2_encoding = 0;
             memcpy_bits(&operand2_encoding, 4, instruction + 1 + (operand1Length / 8), 4, 4);
-            operand2 = *decode_register(cpu, operand2_encoding);
+            operand2 = *get_register(cpu, operand2_encoding);
         }
     }
     write_memory(cpu, operand1, (unsigned char*) &operand2, operand1IsRegister ? 8 : operand1Length);
@@ -353,7 +353,7 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
         if(operand1Length == 0){
             //Operand 1 is a register
             unsigned char operand1_encoding = instruction[1] >> 4;
-            operand1 = *decode_register(cpu, operand1_encoding);
+            operand1 = *get_register(cpu, operand1_encoding);
         }
         else{
             //Operand 1 is a literal
