@@ -168,7 +168,7 @@ char* decode_jump_instruction(unsigned char* encoded_instruction, int* encoding_
     }
 
     char* operand1;
-    char operand1Length = last_n_bits(encoded_instruction[1], 4);
+    char operand1Length = last_n_bits(encoded_instruction[0], 4);
     bool operand1_is_register = false;
     if(operand1Length == 0){
         operand1_is_register = true;
@@ -177,7 +177,10 @@ char* decode_jump_instruction(unsigned char* encoded_instruction, int* encoding_
     }
     else{
         *encoding_length = 1 + operand1Length;
-        operand1 = decode_literal(encoded_instruction + 2, operand1Length);
+        unsigned long long operand1Value = 0;
+        memcpy(&operand1Value, encoded_instruction + 1, operand1Length);
+        operand1 = malloc(19);
+        sprintf(operand1, "0x%llX", operand1Value);
     }
 
     char* instruction = malloc(strlen(jump_type) + strlen(operand1) + 2);
@@ -188,11 +191,47 @@ char* decode_jump_instruction(unsigned char* encoded_instruction, int* encoding_
     return instruction;
 }
 
-char* decode_instruction(unsigned char* encoded_instruction, int* encoding_length){
-    if(first_n_bits(encoded_instruction[0], 5) == KERNEL_COMMAND_ENCODING){
-        return "";
+char* decode_push_rip_instruction(unsigned char* encoded_instruction, int* encoding_length){
+    *encoding_length = 1;
+    //Check if instruction is a call (next instruction is a jmp)
+    if(first_n_bits(encoded_instruction[1], 4) == JMP_ENCODING){
+        char* operand1;
+        unsigned long long operand1Value = 0;
+        memcpy(&operand1Value, encoded_instruction + 2, 8);
+        operand1 = malloc(19);
+        sprintf(operand1, "0x%llX", operand1Value);
+        char* instruction = malloc(strlen(operand1) + 6);
+        sprintf(instruction, "call %s", operand1);
+        free(operand1);
+        *encoding_length = 10;
+        return instruction;
     }
+    else{
+        char* instruction = malloc(9);
+        strcpy(instruction, "push rip");
+        *encoding_length = 1;
+        return instruction;
+    }
+}
 
+char* decode_pop_rip_instruction(unsigned char* encoded_instruction, int* encoding_length){
+    *encoding_length = 1;
+    char* instruction = malloc(4);
+    strcpy(instruction, "ret");
+    return instruction;
+}
+
+char* decode_instruction(unsigned char* encoded_instruction, int* encoding_length){
+    char* decoding;
+    if(first_n_bits(encoded_instruction[0], 5) == KERNEL_COMMAND_ENCODING){
+        *encoding_length = 1;
+        decoding = malloc(10);
+        switch(encoded_instruction[0]){
+            case PUSH_RIP_ENCODING: decoding = decode_push_rip_instruction(encoded_instruction, encoding_length); break;
+            case POP_RIP_ENCODING: strcpy(decoding, "pop rip"); break;
+            case HALT_ENCODING: strcpy(decoding, "halt"); break;
+        }
+    }
     else{
         char instruction_type = first_n_bits(encoded_instruction[0], 4);
         switch(first_n_bits(encoded_instruction[0], 4)){
@@ -201,11 +240,18 @@ char* decode_instruction(unsigned char* encoded_instruction, int* encoding_lengt
             case MUL_ENCODING:
             case DIV_ENCODING:
             case EQUAL_ENCODING:
-                return decode_arithmetic_instruction(encoded_instruction, encoding_length);
-            case LOAD_ENCODING: return decode_load_instruction(encoded_instruction, encoding_length);
-            case STORE_ENCODING: return decode_store_instruction(encoded_instruction, encoding_length);
-            default: return decode_jump_instruction(encoded_instruction, encoding_length);
+                decoding = decode_arithmetic_instruction(encoded_instruction, encoding_length);
+                break;
+            case LOAD_ENCODING:
+                decoding = decode_load_instruction(encoded_instruction, encoding_length);
+                break;
+            case STORE_ENCODING:
+                decoding = decode_store_instruction(encoded_instruction, encoding_length);
+                break;
+            default:
+                decoding = decode_jump_instruction(encoded_instruction, encoding_length);
+                break;
         }
     }
-
+    return decoding;
 }
