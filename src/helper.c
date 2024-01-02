@@ -219,8 +219,8 @@ char* fgettrimmedline(FILE* fp, int* buffer_size){
 }
 
 //Returns a char with only the last n bits of c
-char last_n_bits(unsigned char c, int n) {
-    char mask = 0b11111111;
+unsigned char last_n_bits(unsigned char c, int n) {
+    unsigned char mask = 0b11111111;
     mask >>= (8 - n);
     return c & mask;
 }

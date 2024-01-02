@@ -90,7 +90,7 @@ void dump_cpu(cpu cpu){
 unsigned char* read_memory(cpu* cpu, unsigned long long address){
     cpu->clock_cycles += CLOCK_CYCLES_PER_READ;
     if(address < 0 || address >= cpu->mmu.limit) return NULL;
-    return &cpu->memory[address + cpu->mmu.base];
+    return &(cpu->memory[address + cpu->mmu.base]);
 }
 
 void write_memory(cpu* cpu, unsigned long long address, unsigned char* value, int length){
@@ -126,6 +126,7 @@ void assign(cpu* cpu, unsigned long long* operand1, unsigned long long operand2)
 
 //Return the pointer to register encoded in register_encoding
 unsigned long long* get_register(cpu* cpu, unsigned char register_encoding){
+    register_encoding = last_n_bits(register_encoding, 4);
     switch(register_encoding){
         case RAX_ENCODING: return &(cpu->rax);
         case RBX_ENCODING: return &(cpu->rbx);
@@ -359,7 +360,6 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
             //Operand 1 is a literal
             memcpy(&operand1, instruction + 1, operand1Length);
         }
-        cpu->rip = operand1;
         assign(cpu, &(cpu->rip), operand1);
         return 0; 
     }

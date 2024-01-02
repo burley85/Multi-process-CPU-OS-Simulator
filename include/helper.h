@@ -23,6 +23,6 @@ void memcpy_bits(void* dest, unsigned char dest_offset, void* src, unsigned char
 bool check_bit(unsigned char src, int index);
 char* fgettrimmedline(FILE* fp, int* buffer_size);
 char first_n_bits(unsigned char c, int n);
-char last_n_bits(unsigned char c, int n);
+unsigned char last_n_bits(unsigned char c, int n);
 
 #endif

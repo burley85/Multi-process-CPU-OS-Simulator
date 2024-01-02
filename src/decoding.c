@@ -104,7 +104,9 @@ char* decode_load_instruction(unsigned char* encoded_instruction, int* encoding_
 
     if(!operand2_is_register) free(operand2);
 
-    return instruction;}
+    return instruction;
+    
+}
 
 char* decode_store_instruction(unsigned char* encoded_instruction, int* encoding_length){
     char* operand1;
@@ -151,6 +153,7 @@ char* decode_store_instruction(unsigned char* encoded_instruction, int* encoding
     if(!operand1_is_register) free(operand1);
     if(!operand2_is_register) free(operand2);
 
+    return instruction;
 }
 
 char* decode_jump_instruction(unsigned char* encoded_instruction, int* encoding_length){

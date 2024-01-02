@@ -359,6 +359,7 @@ unsigned char* encode_return(Parser *p, int* encoding_length){
     *encoding_length = 1;
     unsigned char* encoded_instruction = malloc(1);
     encoded_instruction[0] = POP_RIP_ENCODING;
+    return encoded_instruction;
 }
 
 unsigned char* encode_halt(Parser *p, int* encoding_length){

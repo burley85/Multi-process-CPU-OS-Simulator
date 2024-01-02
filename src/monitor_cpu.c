@@ -17,7 +17,7 @@ void copy_to_console_buffer(char** buffer, char* formatted_string, ...) {
 }
 
 void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instruction_positions[]){
-    int pos = c->rip;
+    unsigned long long pos = c->rip;
     int encoding_length;
 
     if(decoded_instructions[0] != NULL) free(decoded_instructions[0]);
