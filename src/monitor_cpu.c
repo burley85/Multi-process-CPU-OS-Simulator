@@ -209,7 +209,7 @@ int main(){
         update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
         update_cpu_buffer(buffer, cpu, decoded_instructions, instruction_positions);
         if(!WriteConsole(h, buffer, strlen(buffer), NULL, NULL)){
-            printf("Error: %d\n", GetLastError());
+            printf("Error: %lu\n", GetLastError());
         }
         SetConsoleCursorPosition(h, (COORD){0, 0});
         Sleep(1000);

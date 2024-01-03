@@ -182,7 +182,7 @@ char* fgettrimmedline(FILE* fp, int* buffer_size){
     }
 
     while(1){
-        char* rval = fgets(buffer + strlen(buffer), temp_size - strlen(buffer), fp);
+        fgets(buffer + strlen(buffer), temp_size - strlen(buffer), fp);
 
         if(ferror(fp)){
             printf("ERROR: Could not read line\n");

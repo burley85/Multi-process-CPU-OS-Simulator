@@ -144,6 +144,7 @@ unsigned long long* get_register(cpu* cpu, unsigned char register_encoding){
         case R13_ENCODING: return &(cpu->r13);
         case R14_ENCODING: return &(cpu->r14);
         case R15_ENCODING: return &(cpu->r15);
+        default: return NULL;
     }
 }
 
@@ -484,7 +485,6 @@ FILE* preprocess_file(FILE* fp){
             //Iterate through each word in the line and check if it is a key
             char* str = malloc(strlen(line) + 1);
             memset(str, 0, strlen(line) + 1);
-            int str_len = 0;
             int line_pos = 0;
 
             while(line_pos < strlen(line)){

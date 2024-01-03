@@ -25,6 +25,7 @@ char* decode_register(unsigned char register_encoding){
         case R13_ENCODING: return "r13";
         case R14_ENCODING: return "r14";
         case R15_ENCODING: return "r15";
+        default: return NULL;
     }
 }
 
@@ -236,7 +237,6 @@ char* decode_instruction(unsigned char* encoded_instruction, int* encoding_lengt
         }
     }
     else{
-        char instruction_type = first_n_bits(encoded_instruction[0], 4);
         switch(first_n_bits(encoded_instruction[0], 4)){
             case ADD_ENCODING:
             case SUB_ENCODING:

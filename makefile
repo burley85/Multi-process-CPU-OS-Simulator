@@ -1,5 +1,5 @@
 CXX       := gcc
-CXX_FLAGS := -ggdb
+CXX_FLAGS := -ggdb -Werror=all
 
 BIN     := bin
 SRC     := src
