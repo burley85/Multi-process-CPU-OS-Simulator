@@ -42,10 +42,17 @@ typedef struct cpu{
     unsigned long long clock_cycles;
 } cpu;
 
+typedef struct sim{
+    cpu cpu;
+    enum modes {CONTINUOUS, STEP, EXIT} mode;
+    bool running;
+} sim;
+
+sim* get_sim();
+void reset_sim(sim* s);
 cpu* init_cpu();
-cpu* get_cpu();
 void dump_cpu(cpu cpu);
-void run_cpu(cpu* cpu);
+void run_sim(sim* s);
 void encode_file(FILE* fp, cpu* cpu);
 void execute_instruction(cpu* cpu, unsigned char* instruction);
 

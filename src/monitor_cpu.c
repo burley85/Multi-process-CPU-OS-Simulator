@@ -71,12 +71,16 @@ void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instr
 }
 
 //Print cpu information to the console
-void update_cpu_buffer(char* buffer, cpu* cpu, char* decoded_instructions[], int instruction_positions[]){
+void update_cpu_buffer(char* buffer, sim* s, char* decoded_instructions[], int instruction_positions[]){
+    cpu* cpu = &(s->cpu);
+    
     char* line_format =
         "+------------+---------+          +--------------+-----------------------------+          +----------------+----------+\n";
     copy_to_console_buffer(&buffer, line_format);
 
-    char* sim_status = "RUNNING";
+    char* sim_status = s->running ? "RUNNING" : "PAUSED";
+    if(s->mode == EXIT) sim_status = "EXIT";
+
     unsigned long long sim_runtime = cpu->clock_cycles;
     char* interrupt_type = "NONE";
     line_format = 
@@ -192,7 +196,7 @@ void update_cpu_buffer(char* buffer, cpu* cpu, char* decoded_instructions[], int
     copy_to_console_buffer(&buffer, line_format);
 
     line_format =
-        "+----------+-------------------------------------+-------------------------------------+\n";
+        "+----------+-------------------------------------+-------------------------------------+";
     copy_to_console_buffer(&buffer, line_format);
 }
 
@@ -201,18 +205,28 @@ int main(){
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
     //SetConsoleScreenBufferSize(h, (COORD){200, 200});
 
-    char buffer[40000] = "hi";
-    cpu* cpu = get_cpu();
+    char buffer[40000] = "";
+    sim* s = get_sim();
+    cpu* cpu = &(s->cpu);
+
+    char* decoded_instructions[5] = {NULL, NULL, NULL, NULL, NULL};
+    int instruction_positions[5] = {0, 0, 0, 0, 0};
+
     while(1){
-        char* decoded_instructions[5] = {NULL, NULL, NULL, NULL, NULL};
-        int instruction_positions[5] = {0, 0, 0, 0, 0};
         update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
-        update_cpu_buffer(buffer, cpu, decoded_instructions, instruction_positions);
+        update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
+        if(s->mode == STEP && !s->running){
+            SetConsoleCursorPosition(h, (COORD){0, 0});
+            update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
+            update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
+            scanf("%*c");
+            s->running = true;
+        }
         if(!WriteConsole(h, buffer, strlen(buffer), NULL, NULL)){
             printf("Error: %lu\n", GetLastError());
         }
         SetConsoleCursorPosition(h, (COORD){0, 0});
-        Sleep(1000);
+        
     }
 }
 

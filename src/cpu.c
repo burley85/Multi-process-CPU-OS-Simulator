@@ -9,39 +9,47 @@
 #include "encoding.h"
 
 #define OBJ_NAME "SimCPUObj"
-cpu* init_cpu(){
-    int maxSizeHigh = sizeof(cpu) >> 32;
-    int maxSizeLow = sizeof(cpu) - maxSizeHigh;
-    HANDLE hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, maxSizeHigh, maxSizeLow, OBJ_NAME);
+#define SIM_MODE STEP
 
-    if(hMapFile == NULL){
-        printf("ERROR: Failed to share cpu object\n");
-        exit(1);
-    }
-
-    cpu* cpuPtr = (cpu*) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(cpu));
-    if(cpuPtr == NULL){
-        printf("ERROR: Failed to share cpu object\n");
-        exit(1);
-    }
-
-    memset(cpuPtr, 0, sizeof(cpu));
-    return cpuPtr;
+//Sim gets reset every time main program is run or object is created
+void reset_sim(sim* s){
+    memset(&(s->cpu), 0, sizeof(cpu));
+    s->mode = SIM_MODE;
 }
 
-cpu* get_cpu(){
+sim* get_sim(){
     HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, 0, OBJ_NAME);
-    if(hMapFile == NULL){
-        printf("ERROR: Failed to get shared cpu object\n");
+    bool fileExisted = (hMapFile != NULL);
+    if(!fileExisted){
+        //Create the object
+        int maxSizeHigh = sizeof(sim) >> 32;
+        int maxSizeLow = sizeof(sim) - maxSizeHigh;
+        hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, maxSizeHigh, maxSizeLow, OBJ_NAME);
+        if(hMapFile == NULL){
+            printf("ERROR: Failed to share sim object\n");
+            exit(1);
+        }
+    }
+
+
+    sim* simPtr = (sim*) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(sim));
+    if(simPtr == NULL){
+        printf("ERROR: Failed to map sim object\n");
         exit(1);
     }
 
-    cpu* cpuPtr = (cpu*) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, sizeof(cpu));
+    if(!fileExisted) reset_sim(simPtr);
+
+    return simPtr;  
+}
+
+cpu* init_cpu(){
+    cpu* cpuPtr = malloc(sizeof(cpu));
     if(cpuPtr == NULL){
-        printf("ERROR: Failed to share cpu object\n");
+        printf("ERROR: Failed to allocate memory for cpu\n");
         exit(1);
     }
-
+    memset(cpuPtr, 0, sizeof(cpu));
     return cpuPtr;
 }
 
@@ -421,11 +429,20 @@ void execute_instruction(cpu* cpu, unsigned char* instruction){
     cpu->rip += instruction_length;
 }
 
-void run_cpu(cpu* cpu){
+void run_sim(sim* s){
+    cpu* cpu = &(s->cpu);
+    s->running = true;
+
     unsigned char* instruction = read_memory(cpu, cpu->rip);
-    while(*instruction != HALT_ENCODING){
+    while(1){
         execute_instruction(cpu, instruction);
         instruction = read_memory(cpu, cpu->rip);
+        if(instruction == NULL || *instruction == HALT_ENCODING){
+            s->mode = EXIT;
+            return;
+        }
+        if(s->mode == STEP) s->running = false;
+        while(!s->running){}
     }
 }
 
@@ -524,7 +541,6 @@ FILE* preprocess_file(FILE* fp){
                 }
             }
             fprintf(temp, "\n");
-            free(str);
         }
     }
 
@@ -545,7 +561,6 @@ void encode_file(FILE* fp, cpu* cpu){
 
     DynamicArray labels = createDynamicArray(0, sizeof(char*), true);
     DynamicArray label_addresses = createDynamicArray(0, sizeof(unsigned long long), false);
-
     //Initial pass to look for labels and find their addresses
     unsigned long long address = cpu->mmu.base;
     while(!feof(fp)){
@@ -613,10 +628,6 @@ void encode_file(FILE* fp, cpu* cpu){
                         else if(instruction_is_call) memcpy(encoding + 2, &label_address, 8);
                         break;
                     }
-                }
-                if(i == labels.size){
-                    printf("ERROR: Label %s not found\n", label);
-                    return;
                 }
             }
             write_memory(cpu, address, encoding, encoding_length);
