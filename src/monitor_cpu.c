@@ -71,6 +71,12 @@ void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instr
     }
 }
 
+unsigned long long get_stack_value(cpu* c, long long stack_offset){
+    long long mem_position = c->rsp + stack_offset;
+    if(mem_position < 0 || mem_position + sizeof(unsigned long long) > RAM_SIZE) return 0;
+    return *((unsigned long long*) &(c->memory[mem_position]));
+}
+
 //Print cpu information to the console
 void update_cpu_buffer(char* buffer, sim* s, char* decoded_instructions[], int instruction_positions[]){
     cpu* cpu = &(s->cpu);
@@ -168,40 +174,47 @@ void update_cpu_buffer(char* buffer, sim* s, char* decoded_instructions[], int i
         "+----------+--------------------+----------------------+ +----------+--------------------+----------------------+\n";
     copy_to_console_buffer(&buffer, line_format);
 
-    unsigned long long* valPtr = (unsigned long long *) &(cpu->memory[cpu->rsp - 48]);
+    unsigned long long firstVal = get_stack_value(cpu, -48);
+    unsigned long long secondVal = get_stack_value(cpu, -40);
     line_format =
         "| rsp - 48 | 0x%-16llx | %20llu | | rsp - 40 | 0x%-16llx | %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    copy_to_console_buffer(&buffer, line_format, firstVal, firstVal, secondVal, secondVal);
     
-    valPtr += 2;
+    firstVal = get_stack_value(cpu, -32);
+    secondVal = get_stack_value(cpu, -24);
     line_format =
         "| rsp - 32 | 0x%-16llx | %20llu | | rsp - 24 | 0x%-16llx | %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    copy_to_console_buffer(&buffer, line_format, firstVal, firstVal, secondVal, secondVal);
 
-    valPtr += 2;
+    firstVal = get_stack_value(cpu, -16);
+    secondVal = get_stack_value(cpu, -8);
     line_format =
         "| rsp - 16 | 0x%-16llx | %20llu | | rsp -  8 | 0x%-16llx | %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    copy_to_console_buffer(&buffer, line_format, firstVal, firstVal, secondVal, secondVal);
     
-    valPtr += 2;
+    firstVal = get_stack_value(cpu, 0);
+    secondVal = get_stack_value(cpu, 8);
     line_format =
         "| rsp  ->  | 0x%-16llx | %20llu | | rsp +  8 | 0x%-16llx | %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    copy_to_console_buffer(&buffer, line_format, firstVal, firstVal, secondVal, secondVal);
     
-    valPtr += 2;
+    firstVal = get_stack_value(cpu, 16);
+    secondVal = get_stack_value(cpu, 24);
     line_format =
         "| rsp + 16 | 0x%-16llx | %20llu | | rsp + 24 | 0x%-16llx | %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    copy_to_console_buffer(&buffer, line_format, firstVal, firstVal, secondVal, secondVal);
     
-    valPtr += 2;
+    firstVal = get_stack_value(cpu, 32);
+    secondVal = get_stack_value(cpu, 40);
     line_format =
         "| rsp + 32 | 0x%-16llx | %20llu | | rsp + 40 | 0x%-16llx | %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    copy_to_console_buffer(&buffer, line_format, firstVal, firstVal, secondVal, secondVal);
     
-    valPtr += 2;
+    firstVal = get_stack_value(cpu, 48);
+    secondVal = get_stack_value(cpu, 56);
     line_format =
         "| rsp + 48 | 0x%-16llx | %20llu | | rsp + 56 | 0x%-16llx | %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    copy_to_console_buffer(&buffer, line_format, firstVal, firstVal, secondVal, secondVal);
 
     line_format =
         "+----------+--------------------+----------------------+ +----------+--------------------+----------------------+\n";
