@@ -17,7 +17,7 @@ void destroyDynamicArray(DynamicArray* array);
 void* getDynamicArray(DynamicArray* array, int index);
 void* appendDynamicArray(DynamicArray* array, void* item);
 
-char* str_to_binary(char* str, char* binary_buffer, int len);
+char* str_to_binary(unsigned char* str, char* binary_buffer, int len);
 void print_bin(unsigned char* buffer, int length);
 void cpy_bit(unsigned char* dest, unsigned char dest_offset, unsigned char* src, unsigned char src_offset);
 void memcpy_bits(void* dest, unsigned char dest_offset, void* src, unsigned char src_offset, int num_bits);

@@ -5,6 +5,7 @@
 
 #include "cpu.h"
 #include "decoding.h"
+#include "helper.h"
 
 void copy_to_console_buffer(char** buffer, char* formatted_string, ...) {
     va_list args;
@@ -164,40 +165,47 @@ void update_cpu_buffer(char* buffer, sim* s, char* decoded_instructions[], int i
     copy_to_console_buffer(&buffer, line_format);
 
     line_format =
-        "+----------+-------------------------------------+-------------------------------------+\n";
+        "+----------+--------------------+----------------------+ +----------+--------------------+----------------------+\n";
     copy_to_console_buffer(&buffer, line_format);
 
+    unsigned long long* valPtr = (unsigned long long *) &(cpu->memory[cpu->rsp - 48]);
     line_format =
-        "| rsp - 24 | 00000000 00000000 00000000 00000000 | 00000000 00000000 00000000 00000000 |\n";
-    copy_to_console_buffer(&buffer, line_format);
+        "| rsp - 48 | 0x%-16llx | %20llu | | rsp - 40 | 0x%-16llx | %20llu |\n";
+    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
     
+    valPtr += 2;
     line_format =
-        "| rsp - 16 | 00000000 00000000 00000000 00000000 | 00000000 00000000 00000000 00000000 |\n";
-    copy_to_console_buffer(&buffer, line_format);
+        "| rsp - 32 | 0x%-16llx | %20llu | | rsp - 24 | 0x%-16llx | %20llu |\n";
+    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+
+    valPtr += 2;
+    line_format =
+        "| rsp - 16 | 0x%-16llx | %20llu | | rsp -  8 | 0x%-16llx | %20llu |\n";
+    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    
+    valPtr += 2;
+    line_format =
+        "| rsp  ->  | 0x%-16llx | %20llu | | rsp +  8 | 0x%-16llx | %20llu |\n";
+    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    
+    valPtr += 2;
+    line_format =
+        "| rsp + 16 | 0x%-16llx | %20llu | | rsp + 24 | 0x%-16llx | %20llu |\n";
+    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    
+    valPtr += 2;
+    line_format =
+        "| rsp + 32 | 0x%-16llx | %20llu | | rsp + 40 | 0x%-16llx | %20llu |\n";
+    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
+    
+    valPtr += 2;
+    line_format =
+        "| rsp + 48 | 0x%-16llx | %20llu | | rsp + 56 | 0x%-16llx | %20llu |\n";
+    copy_to_console_buffer(&buffer, line_format, *valPtr, *valPtr, *(valPtr + 1), *(valPtr + 1));
 
     line_format =
-        "| rsp -  8 | 00000000 00000000 00000000 00000000 | 00000000 00000000 00000000 00000000 |\n";
-    copy_to_console_buffer(&buffer, line_format);
-    
-    line_format =
-        "| rsp  ->  | 00000000 00000000 00000000 00000000 | 00000000 00000000 00000000 00000000 |\n";
-    copy_to_console_buffer(&buffer, line_format);
-    
-    line_format =
-        "| rsp +  8 | 00000000 00000000 00000000 00000000 | 00000000 00000000 00000000 00000000 |\n";
-    copy_to_console_buffer(&buffer, line_format);
-    
-    line_format =
-        "| rsp + 16 | 00000000 00000000 00000000 00000000 | 00000000 00000000 00000000 00000000 |\n";
-    copy_to_console_buffer(&buffer, line_format);
-    
-    line_format =
-        "| rsp + 24 | 00000000 00000000 00000000 00000000 | 00000000 00000000 00000000 00000000 |\n";
-    copy_to_console_buffer(&buffer, line_format);
-
-    line_format =
-        "+----------+-------------------------------------+-------------------------------------+";
-    copy_to_console_buffer(&buffer, line_format);
+        "+----------+--------------------+----------------------+ +----------+--------------------+----------------------+\n";
+    copy_to_console_buffer(&buffer, line_format, 0, 0);
 }
 
 int main(){
@@ -225,6 +233,8 @@ int main(){
         if(!WriteConsole(h, buffer, strlen(buffer), NULL, NULL)){
             printf("Error: %lu\n", GetLastError());
         }
+        //Scroll to the top of the console buffer
+        //SetConsoleWindowInfo(h, 
         SetConsoleCursorPosition(h, (COORD){0, 0});
         
     }

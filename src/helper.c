@@ -88,7 +88,7 @@ void* appendDynamicArray(DynamicArray* a, void* item){
     return item_location;
 }
 
-char* char_to_binary(char c, char binary_buffer[8]){
+char* char_to_binary(unsigned char c, char binary_buffer[8]){
     for(int i = 0; i < 8; i++){
         if(c & (0b10000000 >> i)) binary_buffer[i] = '1';
         else binary_buffer[i] = '0';
@@ -96,7 +96,7 @@ char* char_to_binary(char c, char binary_buffer[8]){
     return binary_buffer;
 }
 
-char* str_to_binary(char* str, char* binary_buffer, int len){
+char* str_to_binary(unsigned char* str, char* binary_buffer, int len){
     for(int i = 0; i < len; i++){
         char_to_binary(str[i], binary_buffer + (i * 8));
     }
