@@ -1,20 +1,45 @@
 #ifndef COMPILE_MAIN_EXE
 #include <stdio.h>
-#include <Windows.h>
 #include <string.h>
+#include <Windows.h>
 
 #include "cpu.h"
 #include "decoding.h"
 #include "helper.h"
 
-void copy_to_console_buffer(char** buffer, char* formatted_string, ...) {
+#define CONSOLE_WIDTH 120
+#define CONSOLE_HEIGHT 30
+
+COORD buffer_size = {CONSOLE_WIDTH, CONSOLE_HEIGHT};
+COORD buffer_coord = {0, 0};
+SMALL_RECT write_region = {0, 0, CONSOLE_WIDTH - 1, CONSOLE_HEIGHT - 1};
+
+void copy_to_console_buffer(CHAR_INFO* buffer[], char* formatted_string, ...){
     va_list args;
     va_start(args, formatted_string);
 
-    vsprintf(*buffer, formatted_string, args);
+    char line[CONSOLE_WIDTH + 1] = "";
+    vsprintf(line, formatted_string, args);
 
     va_end(args);
-    *buffer += strlen(*buffer);
+    //Copy line into buffer
+    int i = 0;
+    for(i = 0; i < strlen(line) && i < buffer_size.X - 1; i++){
+        CHAR_INFO* c = (*buffer) + i;
+        c->Char.AsciiChar = line[i];
+        c->Attributes = FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+        if(line[i] == '\n'){ 
+            c->Char.AsciiChar = ' ';
+        }
+    }
+
+    //Fill the rest of the line with ' '
+    for(; i < buffer_size.X; i++){
+        CHAR_INFO* c = (*buffer) + i;
+        c->Char.AsciiChar = ' ';
+    }
+
+    *buffer += buffer_size.X;
 }
 
 void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instruction_positions[]){
@@ -78,7 +103,7 @@ unsigned long long get_stack_value(cpu* c, long long stack_offset){
 }
 
 //Print cpu information to the console
-void update_cpu_buffer(char* buffer, sim* s, char* decoded_instructions[], int instruction_positions[]){
+void update_cpu_buffer(CHAR_INFO buffer[], sim* s, char* decoded_instructions[], int instruction_positions[]){
     cpu* cpu = &(s->cpu);
     
     char* line_format =
@@ -224,9 +249,10 @@ void update_cpu_buffer(char* buffer, sim* s, char* decoded_instructions[], int i
 int main(){
     //Get HANDLE to the console
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    //SetConsoleScreenBufferSize(h, (COORD){200, 200});
 
-    char buffer[40000] = "";
+
+    CHAR_INFO buffer[3600] = {0};
+
     sim* s = get_sim();
     cpu* cpu = &(s->cpu);
 
@@ -237,19 +263,14 @@ int main(){
         update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
         update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
         if(s->mode == STEP && !s->running){
-            SetConsoleCursorPosition(h, (COORD){0, 0});
             update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
             update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
             scanf("%*c");
             s->running = true;
         }
-        if(!WriteConsole(h, buffer, strlen(buffer), NULL, NULL)){
+        if(!WriteConsoleOutput(h, buffer, buffer_size, buffer_coord, &write_region)){
             printf("Error: %lu\n", GetLastError());
         }
-        //Scroll to the top of the console buffer
-        //SetConsoleWindowInfo(h, 
-        SetConsoleCursorPosition(h, (COORD){0, 0});
-        
     }
 }
 
