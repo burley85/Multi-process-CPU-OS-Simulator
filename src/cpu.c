@@ -377,29 +377,31 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
     else return operand1Length + 1;    
 }
 
+int execute_push_rip_instruction(cpu* cpu, unsigned char* instruction){
+    cpu->rsp -= 8;
+    char kernel_command_length = 1;
+    if(instruction[1] >> 4 == JMP_ENCODING){
+        unsigned char jmp_dest_length = 0;
+        memcpy_bits(&jmp_dest_length, 4, instruction + 1, 4, 4);
+        if(jmp_dest_length == 0) kernel_command_length += 2;
+        else kernel_command_length += 1 + jmp_dest_length;
+    }
+    else{
+        printf("ERROR: Invalid kernel command. Expected JMP after PUSH_RIP\n");
+        dump_cpu(*cpu);
+        exit(1);
+    }
+    unsigned long long new_rip = cpu->rip + kernel_command_length;
+    write_memory(cpu, cpu->rsp, (unsigned char*) &new_rip, 8);
+    return 1;
+}
+
 void execute_instruction(cpu* cpu, unsigned char* instruction){
-    unsigned char operation = instruction[0];
+    unsigned char operation = instruction[0]; 
     int instruction_length = 0;
 
     if((operation >> 3) == KERNEL_COMMAND_ENCODING){
-        if(operation == PUSH_RIP_ENCODING){
-            cpu->rsp -= 8;
-            char kernel_command_length = 1;
-            if(instruction[1] >> 4 == JMP_ENCODING){
-                unsigned char jmp_dest_length = 0;
-                memcpy_bits(&jmp_dest_length, 4, instruction + 1, 4, 4);
-                if(jmp_dest_length == 0) kernel_command_length += 2;
-                else kernel_command_length += 1 + jmp_dest_length;
-            }
-            else{
-                printf("ERROR: Invalid kernel command. Expected JMP after PUSH_RIP\n");
-                dump_cpu(*cpu);
-                exit(1);
-            }
-            unsigned long long new_rip = cpu->rip + kernel_command_length;
-            write_memory(cpu, cpu->rsp, (unsigned char*) &new_rip, 8);
-            instruction_length = 1;
-        }
+        if(operation == PUSH_RIP_ENCODING) instruction_length = execute_push_rip_instruction(cpu, instruction);
         else if(operation == POP_RIP_ENCODING){
             unsigned long long new_rip;
             unsigned char* mem = read_memory(cpu, cpu->rsp);
