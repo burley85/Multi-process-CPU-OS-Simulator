@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #define RAM_SIZE 262144
+#define IVT_START 0x0
 
 typedef struct mmu{
     unsigned long long base;
@@ -47,6 +48,12 @@ typedef struct sim{
     enum modes {CONTINUOUS, STEP, EXIT} mode;
     bool running;
 } sim;
+
+//NOTE: Must be in the same order as the interrupt table
+typedef enum interrupt_type{
+    HALT_INTRPT,
+    CLOCK_INTRPT
+} interrupt_type;
 
 sim* get_sim();
 void reset_sim(sim* s);
