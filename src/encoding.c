@@ -24,6 +24,10 @@ unsigned char encode_register(int reg){
         case R13: return R13_ENCODING;
         case R14: return R14_ENCODING;
         case R15: return R15_ENCODING;
+        case CR0: return CR0_ENCODING;
+        case CR1: return CR1_ENCODING;
+        case CR2: return CR2_ENCODING;
+        case CR3: return CR3_ENCODING;
         default:
             printf("ERROR: Expected register, got %s\n", token_to_str(reg));
             return HALT_ENCODING;
@@ -369,6 +373,42 @@ unsigned char* encode_halt(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
+unsigned char* encode_set_control_register(Parser *p, int* encoding_length){
+    int control_reg = p->tokenType;
+    int operand = next_token(p);    
+    int general_reg = next_token(p);
+
+    //Type checking
+    if(operand != EQUALS){
+        printf("ERROR: Expected EQUALS, got %s\n", current_token_str(p));
+        return NULL;
+    }
+    if(general_reg < RAX || general_reg > R15){
+        printf("ERROR: Expected RAX-R15, got %s\n", current_token_str(p));
+        return NULL;
+    }
+
+    *encoding_length = 2;
+    unsigned char* encoded_instruction = malloc(2);
+    encoded_instruction[0] = SET_CONTROL_REGISTER_ENCODING;
+    encoded_instruction[1] = encode_register(control_reg) << 4;
+    encoded_instruction[1] += encode_register(general_reg);
+
+    return encoded_instruction;
+}
+
+unsigned char* encode_get_control_register(Parser *p, int general_reg, int* encoding_length){
+    int control_reg = p->tokenType;
+
+    *encoding_length = 2;
+    unsigned char* encoded_instruction = malloc(2);
+    encoded_instruction[0] = GET_CONTROL_REGISTER_ENCODING;
+    encoded_instruction[1] = encode_register(general_reg) << 4;
+    encoded_instruction[1] += encode_register(control_reg);
+
+    return encoded_instruction;
+}
+
 unsigned char* encode_instruction(char *instruction, int* encoding_length) {
     // Find the operation and call the appropriate function
     Parser p;
@@ -386,8 +426,10 @@ unsigned char* encode_instruction(char *instruction, int* encoding_length) {
         int token1 = next_token(&p);
         int token2 = next_token(&p);
         if(token1 == EQUALS && token2 == LPAREN) return encode_load_instruction(&p, reg, encoding_length);
+        if(token1 == EQUALS && token2 >= CR0 && token2 <= CR3) return encode_get_control_register(&p, reg, encoding_length);
         else return encode_arithmetic_instruction(&p, reg, token1, encoding_length);
     }
+    if(token >= CR0 && token <= CR3) return encode_set_control_register(&p, encoding_length);
     if(token == POP) return encode_pop(&p, encoding_length);
     if(token == PUSH) return encode_push(&p, encoding_length);
     if(token == HALT) return encode_halt(&p, encoding_length);

@@ -118,6 +118,12 @@ They are encoded as follows:
 Kernel commands:
     11111001: push rip to stack
     11111010: pop rip from stack
+    11111010 AAAABBBB: set control register
+        AAAA: control register encoding (0000 for mmu base, 0001 for mmu limit, 0010 for flags, 0011 for interrupt clock)
+        BBBB: general purpose register encoding
+    11111011 BBBBAAAA: get control register
+        BBBB: general purpose register encoding
+        AAAA: control register encoding (0000 for mmu base, 0001 for mmu limit, 0010 for flags, 0011 for interrupt clock)
     11111111: halt
 
 Aliases:
@@ -148,6 +154,11 @@ Aliases:
 #define R14_ENCODING 0b1110
 #define R15_ENCODING 0b1111
 
+#define CR0_ENCODING 0b0000
+#define CR1_ENCODING 0b0001
+#define CR2_ENCODING 0b0010
+#define CR3_ENCODING 0b0011
+
 #define ADD_ENCODING 0b0000
 #define SUB_ENCODING 0b0001
 #define MUL_ENCODING 0b0010
@@ -169,6 +180,8 @@ Aliases:
 #define KERNEL_COMMAND_ENCODING 0b11111001
 #define PUSH_RIP_ENCODING 0b11111001
 #define POP_RIP_ENCODING 0b11111010
+#define SET_CONTROL_REGISTER_ENCODING 0b11111011
+#define GET_CONTROL_REGISTER_ENCODING 0b11111100
 #define HALT_ENCODING 0b11111111
 
 unsigned char* encode_instruction(char *instruction, int* encoding_length);
