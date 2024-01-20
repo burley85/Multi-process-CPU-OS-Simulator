@@ -116,8 +116,8 @@ They are encoded as follows:
     Operand (8-64 bits)
 
 Kernel commands:
-    11111000: push rip to stack
-    11111001: pop rip from stack
+    11111001: push rip to stack
+    11111010: pop rip from stack
     11111111: halt
 
 Aliases:
@@ -166,9 +166,9 @@ Aliases:
 #define JS_ENCODING 0b1110
 #define JNS_ENCODING 0b1111
 
-#define KERNEL_COMMAND_ENCODING 0b11111
-#define PUSH_RIP_ENCODING 0b11111000
-#define POP_RIP_ENCODING 0b11111001
+#define KERNEL_COMMAND_ENCODING 0b11111001
+#define PUSH_RIP_ENCODING 0b11111001
+#define POP_RIP_ENCODING 0b11111010
 #define HALT_ENCODING 0b11111111
 
 unsigned char* encode_instruction(char *instruction, int* encoding_length);

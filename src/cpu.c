@@ -407,7 +407,7 @@ void execute_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operation = instruction[0]; 
     int instruction_length = 0;
 
-    if((operation >> 3) == KERNEL_COMMAND_ENCODING){
+    if(operation >= KERNEL_COMMAND_ENCODING){
         if(operation == PUSH_RIP_ENCODING) instruction_length = execute_push_rip_instruction(cpu, instruction);
         else if(operation == POP_RIP_ENCODING){
             unsigned long long new_rip;
@@ -616,7 +616,7 @@ void encode_file(FILE* fp, cpu* cpu){
         unsigned char* encoding = encode_instruction(instruction, &encoding_length);
         if(encoding != NULL){
             //If instruction is a jump or a call, replace the 8 0 bytes with the address of the label
-            bool instruction_is_jump = ((encoding[0] >> 4) >= JMP_ENCODING && (encoding[0] >> 4) <= JNS_ENCODING && !(encoding[0] >> 3 == KERNEL_COMMAND_ENCODING));
+            bool instruction_is_jump = ((encoding[0] >> 4) >= JMP_ENCODING && (encoding[0] >> 4) <= JNS_ENCODING && !(encoding[0] >= KERNEL_COMMAND_ENCODING));
             bool instruction_is_call = (encoding[0] == PUSH_RIP_ENCODING) && (encoding[1] >> 4) == JMP_ENCODING;
             if(instruction_is_jump || instruction_is_call){
                 //Find the label

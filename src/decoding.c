@@ -227,7 +227,7 @@ char* decode_pop_rip_instruction(unsigned char* encoded_instruction, int* encodi
 
 char* decode_instruction(unsigned char* encoded_instruction, int* encoding_length){
     char* decoding;
-    if(first_n_bits(encoded_instruction[0], 5) == KERNEL_COMMAND_ENCODING){
+    if(encoded_instruction[0] >= KERNEL_COMMAND_ENCODING){
         *encoding_length = 1;
         decoding = malloc(10);
         switch(encoded_instruction[0]){
