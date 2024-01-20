@@ -119,7 +119,7 @@ Kernel commands:
     11111001: push rip to stack
     11111010: pop rip from stack
     11111010 AAAABBBB: set control register
-        AAAA: control register encoding (0000 for mmu base, 0001 for mmu limit, 0010 for flags, 0011 for interrupt clock)
+        AAAA: control register encoding (0000 for clock_cycles, 0001 for interrupt clock, 0010 for flags, 0011 for mmu base, 0100 for mmu limit)
         BBBB: general purpose register encoding
     11111011 BBBBAAAA: get control register
         BBBB: general purpose register encoding
@@ -158,6 +158,7 @@ Aliases:
 #define CR1_ENCODING 0b0001
 #define CR2_ENCODING 0b0010
 #define CR3_ENCODING 0b0011
+#define CR4_ENCODING 0b0100
 
 #define ADD_ENCODING 0b0000
 #define SUB_ENCODING 0b0001

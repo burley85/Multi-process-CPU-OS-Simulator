@@ -6,7 +6,7 @@ enum TokenType {
     RAX, RBX, RCX, RDX, RSI, RDI, RBP, RSP, R8, R9, R10, R11, R12, R13, R14, R15,
 
     // Control Registers
-    CR0, CR1, CR2, CR3,
+    CR0, CR1, CR2, CR3, CR4,
 
     // Symbols
     PLUS, MINUS, TIMES, DIVIDE, EQUALS, LPAREN, RPAREN,
@@ -18,8 +18,8 @@ enum TokenType {
     LITERAL, LABEL
 };
 
-#define KEYWORD_LIST {"rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "jmp", "jo", "jno", "jz", "jnz", "jc", "jnc", "js", "jns", "push", "pop", "halt", "system", "call", "ret", "cr0", "cr1", "cr2", "cr3"}
-#define KEYWORD_TOKEN_LIST {RAX, RBX, RCX, RDX, RSI, RDI, RBP, RSP, R8, R9, R10, R11, R12, R13, R14, R15, JMP, JO, JNO, JZ, JNZ, JC, JNC, JS, JNS, PUSH, POP, HALT, SYSTEM, CALL, RET, CR0, CR1, CR2, CR3}
+#define KEYWORD_LIST {"rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "jmp", "jo", "jno", "jz", "jnz", "jc", "jnc", "js", "jns", "push", "pop", "halt", "system", "call", "ret", "cr0", "cr1", "cr2", "cr3", "cr4"}
+#define KEYWORD_TOKEN_LIST {RAX, RBX, RCX, RDX, RSI, RDI, RBP, RSP, R8, R9, R10, R11, R12, R13, R14, R15, JMP, JO, JNO, JZ, JNZ, JC, JNC, JS, JNS, PUSH, POP, HALT, SYSTEM, CALL, RET, CR0, CR1, CR2, CR3, CR4}
 
 typedef struct Parser {
     void* fileOrString;

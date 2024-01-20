@@ -30,10 +30,18 @@ typedef struct cpu{
     unsigned long long r14;
     unsigned long long r15;
 
-    bool of;
-    bool sf;
-    bool zf;
-    bool cf;
+    union{
+        unsigned long long flag_register;
+        struct{
+            bool of;
+            bool sf;
+            bool zf;
+            bool cf;
+        } flags;
+    } flags;
+    
+
+
 
     unsigned long long rip;
 
@@ -41,6 +49,7 @@ typedef struct cpu{
     mmu mmu;
 
     unsigned long long clock_cycles;
+    unsigned long long interrupt_clock;
 } cpu;
 
 typedef struct sim{

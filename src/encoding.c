@@ -28,6 +28,7 @@ unsigned char encode_register(int reg){
         case CR1: return CR1_ENCODING;
         case CR2: return CR2_ENCODING;
         case CR3: return CR3_ENCODING;
+        case CR4: return CR4_ENCODING;
         default:
             printf("ERROR: Expected register, got %s\n", token_to_str(reg));
             return HALT_ENCODING;
@@ -426,10 +427,10 @@ unsigned char* encode_instruction(char *instruction, int* encoding_length) {
         int token1 = next_token(&p);
         int token2 = next_token(&p);
         if(token1 == EQUALS && token2 == LPAREN) return encode_load_instruction(&p, reg, encoding_length);
-        if(token1 == EQUALS && token2 >= CR0 && token2 <= CR3) return encode_get_control_register(&p, reg, encoding_length);
+        if(token1 == EQUALS && token2 >= CR0 && token2 <= CR4) return encode_get_control_register(&p, reg, encoding_length);
         else return encode_arithmetic_instruction(&p, reg, token1, encoding_length);
     }
-    if(token >= CR0 && token <= CR3) return encode_set_control_register(&p, encoding_length);
+    if(token >= CR0 && token <= CR4) return encode_set_control_register(&p, encoding_length);
     if(token == POP) return encode_pop(&p, encoding_length);
     if(token == PUSH) return encode_push(&p, encoding_length);
     if(token == HALT) return encode_halt(&p, encoding_length);

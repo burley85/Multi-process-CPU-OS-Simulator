@@ -70,10 +70,10 @@ void dump_cpu(cpu cpu){
     printf("r13: %llu\n", cpu.r13);
     printf("r14: %llu\n", cpu.r14);
     printf("r15: %llu\n", cpu.r15);
-    printf("of: %d\n", cpu.of);
-    printf("sf: %d\n", cpu.sf);
-    printf("zf: %d\n", cpu.zf);
-    printf("cf: %d\n", cpu.cf);
+    printf("of: %d\n", cpu.flags.flags.of);
+    printf("sf: %d\n", cpu.flags.flags.sf);
+    printf("zf: %d\n", cpu.flags.flags.zf);
+    printf("cf: %d\n", cpu.flags.flags.cf);
     printf("rip: 0x%llx\n", cpu.rip);
     printf("\nmemory:\n");
     for(int i = 0; i < RAM_SIZE; i++){
@@ -156,11 +156,22 @@ unsigned long long* get_register(cpu* cpu, unsigned char register_encoding){
     }
 }
 
+unsigned long long* get_control_register(cpu* cpu, unsigned char control_register_encoding){
+    control_register_encoding = last_n_bits(control_register_encoding, 4);
+
+    switch(control_register_encoding){
+        case CR0_ENCODING: return &(cpu->clock_cycles);
+        case CR1_ENCODING: return &(cpu->interrupt_clock);
+        case CR2_ENCODING: return &(cpu->flags.flag_register);
+        case CR3_ENCODING: return &(cpu->mmu.base);
+        case CR4_ENCODING: return &(cpu->mmu.limit);
+        default: return NULL;
+    }
+}
+        
+
 void clear_flags(cpu* cpu){
-    cpu->of = false;
-    cpu->sf = false;
-    cpu->zf = false;
-    cpu->cf = false;
+    cpu->flags.flag_register = 0;
 }
 
 void execute_add_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
@@ -170,8 +181,8 @@ void execute_add_instruction(cpu* cpu, unsigned long long *operand1, unsigned lo
     bool op2_sign = operand2 >> 63;
     bool result_sign = result >> 63;
 
-    cpu->of = (op1_sign == op2_sign) && (op1_sign != result_sign);
-    cpu->cf = result < *operand1;
+    cpu->flags.flags.of = (op1_sign == op2_sign) && (op1_sign != result_sign);
+    cpu->flags.flags.cf = result < *operand1;
 
     assign(cpu, operand1, result);
 }
@@ -183,8 +194,8 @@ void execute_subtraction_instruction(cpu* cpu, unsigned long long *operand1, uns
     bool op2_sign = operand2 >> 63;
     bool result_sign = result >> 63;
 
-    cpu->of = (op1_sign != op2_sign) && (op1_sign != result_sign);
-    cpu->cf = result > *operand1;
+    cpu->flags.flags.of = (op1_sign != op2_sign) && (op1_sign != result_sign);
+    cpu->flags.flags.cf = result > *operand1;
 
     assign(cpu, operand1, result);
 }
@@ -193,8 +204,8 @@ void execute_multiplication_instruction(cpu* cpu, unsigned long long *operand1, 
     long double unsigned_result = *operand1 * operand2;
     long double signed_result = (long long) *operand1 * (long long) operand2;
 
-    cpu->of = signed_result < INT64_MIN || signed_result > INT64_MAX;
-    cpu->cf = unsigned_result > UINT64_MAX;
+    cpu->flags.flags.of = signed_result < INT64_MIN || signed_result > INT64_MAX;
+    cpu->flags.flags.cf = unsigned_result > UINT64_MAX;
 
     assign(cpu, operand1, multiply(cpu, *operand1, operand2));
 }
@@ -263,8 +274,8 @@ int execute_arithmetic_instruction(cpu* cpu, unsigned char* instruction){
             execute_load_instruction(cpu, operand1, operand2);
             break;
     }
-    cpu->zf = *operand1 == 0;
-    cpu->sf = *operand1 >> 63;
+    cpu->flags.flags.zf = *operand1 == 0;
+    cpu->flags.flags.sf = *operand1 >> 63;
     return instruction_length;
 }
 
@@ -329,28 +340,28 @@ int execute_jump_instruction(cpu* cpu, unsigned char* instruction){
     bool condition_met = false;
     switch(operation){
         case JO_ENCODING: //jo
-            if(cpu->of) condition_met = true;
+            if(cpu->flags.flags.of) condition_met = true;
             break;
         case JNO_ENCODING: //jno
-            if(!cpu->of) condition_met = true;
+            if(!cpu->flags.flags.of) condition_met = true;
             break;
         case JZ_ENCODING: //jz
-            if(cpu->zf) condition_met = true;
+            if(cpu->flags.flags.zf) condition_met = true;
             break;
         case JNZ_ENCODING: //jnz
-            if(!cpu->zf) condition_met = true;
+            if(!cpu->flags.flags.zf) condition_met = true;
             break;
         case JC_ENCODING: //jc
-            if(cpu->cf) condition_met = true;
+            if(cpu->flags.flags.cf) condition_met = true;
             break;
         case JNC_ENCODING: //jnc
-            if(!cpu->cf) condition_met = true;
+            if(!cpu->flags.flags.cf) condition_met = true;
             break;
         case JS_ENCODING: //js
-            if(cpu->sf) condition_met = true;
+            if(cpu->flags.flags.sf) condition_met = true;
             break;
         case JNS_ENCODING: //jns
-            if(!cpu->sf) condition_met = true;
+            if(!cpu->flags.flags.sf) condition_met = true;
             break;
         case JMP_ENCODING: //Unconditional jump
             condition_met = true;
@@ -403,6 +414,22 @@ void execute_interrupt(cpu *cpu, interrupt_type interrupt){
     assign(cpu, &(cpu->rip), intrpt_handler_address);
 }
 
+int execute_set_cr_instruction(cpu *cpu, unsigned char* instruction){
+    unsigned long long* operand1 = get_control_register(cpu, first_n_bits(instruction[1], 4));
+    unsigned long long operand2 = *get_register(cpu, last_n_bits(instruction[1], 4));
+
+    assign(cpu, operand1, operand2);
+    return 2;
+}
+
+int execute_get_cr_instruction(cpu *cpu, unsigned char* instruction){
+    unsigned long long* operand1 = get_register(cpu, first_n_bits(instruction[1], 4));
+    unsigned long long operand2 = *get_control_register(cpu, last_n_bits(instruction[1], 4));
+
+    assign(cpu, operand1, operand2);
+    return 2;
+}
+
 void execute_instruction(cpu* cpu, unsigned char* instruction){
     unsigned char operation = instruction[0]; 
     int instruction_length = 0;
@@ -417,6 +444,10 @@ void execute_instruction(cpu* cpu, unsigned char* instruction){
             cpu->rsp += 8;
             instruction_length = 0;
         }
+        else if(operation == SET_CONTROL_REGISTER_ENCODING)
+                instruction_length = execute_set_cr_instruction(cpu, instruction);
+        else if(operation == GET_CONTROL_REGISTER_ENCODING)
+                instruction_length = execute_get_cr_instruction(cpu, instruction);
         else if(operation == HALT_ENCODING) execute_interrupt(cpu, HALT_INTRPT);
         else{
             printf("ERROR: Invalid kernel command\n");
