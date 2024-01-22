@@ -12,6 +12,38 @@ check_bit:
     pop r10
     ret
 
+;Set the rdi-th bit of rsi to 1
+set_bit:
+    call check_bit
+    rax = rax
+    jnz set_bit_end
+    
+    ;Add 2^(63 - rdi) to rsi
+    rax = rdi
+    rdi = 63
+    rdi - rax
+    call pow2 ;rax = 2^(63 - rdi)
+    rsi + rax
+
+    set_bit_end:
+    ret
+
+;Set the rdi-th bit of rsi to 0
+clear_bit:
+    call check_bit
+    rax = rax
+    jz clear_bit_end
+    
+    ;subtract 2^(63 - rdi) from rsi
+    rax = rdi
+    rdi = 63
+    rdi - rax
+    call pow2 ;rax = 2^(63 - rdi)
+    rsi - rax
+
+    clear_bit_end:
+    ret
+
 ;Return 2^rdi
 pow2:
     rax = 1
@@ -51,8 +83,54 @@ store_halt_int:
     (r8) = rax
     ret
 halt_int_handler:
-    ret
+    ;Get array of boolean values, indicating which PCBs are in use, and get pid of halted process
+    rdi = (PCB_TABLE_START) ;pid
+    r8 = PCB_TABLE_START
+    r8 + 1 ;Pointer to array of bools
+    rsi = (r8)
 
+    ;Set PCB to not in use
+    call clear_bit
+    (r8) = rsi
+
+    ;Find the next process in the queue
+    call round_robin_scheduler
+    (PCB_TABLE_START) = rax ;Store PID of next process
+    rax * PCB_SIZE
+    rax + PCB_TABLE_START ;Address of next process's PCB
+
+    ;Switch to the stack of the next process
+    rax + PCB_RSP_OFFSET
+    rsp = (rax)
+    rax - PCB_RSP_OFFSET
+
+    ;Put process's rip onto the stack
+    rax + PCB_RIP_OFFSET
+    rbx = (rax)
+    push rbx
+
+    ;Load next process's PCB
+    store_PCB
+
+    ;Get next process's flags
+    push rbx
+    (PCB_TABLE_START) = rbx
+    rbx * PCB_SIZE
+    rbx + PCB_TABLE_START ;Address of process's PCB
+    rbx + PCB_FLAGS_OFFSET
+    rbx = (rbx) ;rbx = flags
+
+    ;Reset interrupt clock
+    push rax
+    rax = 1000
+    cr1 = rax
+    pop rax
+
+    ;Set flags
+    cr2 = rbx
+    pop rbx
+
+    ret
 store_clk_int:
     r8 = IVT_START
     r8 + 2 ;Offset of 2 from IVT_START
