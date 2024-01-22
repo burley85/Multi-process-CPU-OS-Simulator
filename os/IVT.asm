@@ -62,6 +62,71 @@ store_clk_int:
     (r8) = rax
     ret
 clk_int_handler:
+    ;Preserve rax-rcx
+    push rax
+    push rbx
+    push rcx
+
+    ;Get process's flags, rsp, and rip
+    rax = cr2
+    rbx = rsp
+    rbx + 32 ;Process's original rsp (before pushing return address, rax, rbx, rcx)
+    rcx = rsp
+    rcx + 24 ;Pointer to return address
+    rcx = (rcx)
+
+    push rcx ;Store return address
+    push rbx ;Store original rsp
+    push rax ;Store process's flags
+
+    ;Restore rax-rcx
+    rsp + 24
+    pop rcx
+    pop rbx
+    pop rax
+    rsp - 24
+
+    ;Update PCB
+    call store_PCB
+    rsp + 24
+
+    ;Find the next process in the queue
+    call round_robin_scheduler
+    (PCB_TABLE_START) = rax ;Store PID of next process
+    rax * PCB_SIZE
+    rax + PCB_TABLE_START ;Address of next process's PCB
+
+    ;Switch to the stack of the next process
+    rax + PCB_RSP_OFFSET
+    rsp = (rax)
+    rax - PCB_RSP_OFFSET
+
+    ;Put process's rip onto the stack
+    rax + PCB_RIP_OFFSET
+    rbx = (rax)
+    push rbx
+
+    ;Load next process's PCB
+    store_PCB
+
+    ;Get next process's flags
+    push rbx
+    (PCB_TABLE_START) = rbx
+    rbx * PCB_SIZE
+    rbx + PCB_TABLE_START ;Address of process's PCB
+    rbx + PCB_FLAGS_OFFSET
+    rbx = (rbx) ;rbx = flags
+
+    ;Reset interrupt clock
+    push rax
+    rax = 1000
+    cr1 = rax
+    pop rax
+
+    ;Set flags
+    cr2 = rbx
+    pop rbx
+
     ret
 
 ;PCB Table layout:
@@ -234,7 +299,7 @@ store_PCB:
     (rbx) = r10
     rbx - PCB_RIP_OFFSET ;Reset rbx
 
-    ;Store mmu base/ limit
+    ;Store mmu base/limit
     r8 = cr3 ;Base
     r9 = cr4 ;Limit
     rbx + PCB_BASE_ADDR_OFFSET
@@ -242,3 +307,61 @@ store_PCB:
     rbx - PCB_BASE_ADDR_OFFSET
     rbx + PCB_LIMIT_OFFSET
     (rbx) = r9
+    ret
+
+;NOTE: does not load registers rip, rsp, and flags
+load_PCB:
+
+    rbx = PCB_TABLE_START
+    rbx = (rbx) ;Process's PID
+    rbx * PCB_SIZE
+    rbx + PCB_TABLE_START ;Address of process's PCB
+
+    ;Load mmu base/limit
+    rbx + PCB_BASE_ADDR_OFFSET
+    r8 = (rbx)
+    rbx - PCB_BASE_ADDR_OFFSET
+    rbx + PCB_LIMIT_OFFSET
+    r9 = (rbx)
+    cr3 = r8
+    cr4 = r9
+    rbx - PCB_LIMIT_OFFSET ;Reset rbx to point to start of PCB
+
+    ;Load register rax
+    rbx + PCB_RAX_OFFSET
+    rax = (rbx)
+    rbx - PCB_RAX_OFFSET ;Reset rbx
+
+    ;Load registers rcx-rbp
+    rbx + PCB_RCX_OFFSET
+    rcx = (rbx)
+    rbx + 8
+    rdi = (rbx)
+    rbx + 8
+    rsi = (rbx)
+    rbx + 8
+    rbp = (rbx)
+    rbx - PCB_RBP_OFFSET ;Reset rbx
+
+    ;Load registers r8-r15
+    rbx + PCB_R8_OFFSET
+    r8 = (rbx)
+    rbx + 8
+    r9 = (rbx)
+    rbx + 8
+    r10 = (rbx)
+    rbx + 8
+    r11 = (rbx)
+    rbx + 8
+    r12 = (rbx)
+    rbx + 8
+    r13 = (rbx)
+    rbx + 8
+    r14 = (rbx)
+    rbx + 8
+    r15 = (rbx)
+    rbx - PCB_R15_OFFSET ;Reset rbx
+
+    ;Load register rbx
+    rbx + PCB_RBX_OFFSET
+    rbx = (rbx)
