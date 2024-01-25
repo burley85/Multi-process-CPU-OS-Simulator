@@ -97,14 +97,20 @@ void dump_cpu(cpu cpu){
 
 unsigned char* read_memory(cpu* cpu, unsigned long long address){
     cpu->clock_cycles += CLOCK_CYCLES_PER_READ;
-    if(address < 0 || address >= cpu->mmu.limit) return NULL;
+    if(address >= RAM_SIZE) return NULL;
+
+    //Kernel mode ignores mmu
+    if(cpu->flags.flags.kf) return &(cpu->memory[address]); 
+
+    if(address >= cpu->mmu.limit) return NULL;
     return &(cpu->memory[address + cpu->mmu.base]);
 }
 
 void write_memory(cpu* cpu, unsigned long long address, unsigned char* value, int length){
     cpu->clock_cycles += CLOCK_CYCLES_PER_WRITE;
-    if(address >= 0 && address < cpu->mmu.limit && address + cpu->mmu.base < RAM_SIZE) 
-        memcpy(&cpu->memory[address + cpu->mmu.base], value, length);
+
+    if(cpu->flags.flags.kf && address < RAM_SIZE) memcpy(&cpu->memory[address], value, length);
+    else if(address < cpu->mmu.limit) memcpy(&cpu->memory[address + cpu->mmu.base], value, length);      
 }
 
 unsigned long long add(cpu* cpu, unsigned long long operand1, unsigned long long operand2){
@@ -406,6 +412,7 @@ int execute_push_rip_instruction(cpu* cpu, unsigned char* instruction){
 void execute_interrupt(cpu *cpu, interrupt_type interrupt){
     cpu->rsp -= 8;
     write_memory(cpu, cpu->rsp, (unsigned char*) &cpu->rip, 8);
+    cpu->flags.flags.kf = true;
 
     //Address of interrupt handler is stored at IVT_START + interrupt * 2
     unsigned char* intrpt_handler_address_ptr = read_memory(cpu, IVT_START + interrupt * 2);
@@ -415,18 +422,22 @@ void execute_interrupt(cpu *cpu, interrupt_type interrupt){
 }
 
 int execute_set_cr_instruction(cpu *cpu, unsigned char* instruction){
-    unsigned long long* operand1 = get_control_register(cpu, first_n_bits(instruction[1], 4));
-    unsigned long long operand2 = *get_register(cpu, last_n_bits(instruction[1], 4));
+    if(cpu->flags.flags.kf){
+        unsigned long long* operand1 = get_control_register(cpu, first_n_bits(instruction[1], 4));
+        unsigned long long operand2 = *get_register(cpu, last_n_bits(instruction[1], 4));
 
-    assign(cpu, operand1, operand2);
+        assign(cpu, operand1, operand2);
+    }
     return 2;
 }
 
 int execute_get_cr_instruction(cpu *cpu, unsigned char* instruction){
-    unsigned long long* operand1 = get_register(cpu, first_n_bits(instruction[1], 4));
-    unsigned long long operand2 = *get_control_register(cpu, last_n_bits(instruction[1], 4));
+    if(!cpu->flags.flags.kf) {
+        unsigned long long* operand1 = get_register(cpu, first_n_bits(instruction[1], 4));
+        unsigned long long operand2 = *get_control_register(cpu, last_n_bits(instruction[1], 4));
 
-    assign(cpu, operand1, operand2);
+        assign(cpu, operand1, operand2);
+    }
     return 2;
 }
 
@@ -664,6 +675,10 @@ void encode_file(FILE* fp, cpu* cpu){
                         else if(instruction_is_call) memcpy(encoding + 2, &label_address, 8);
                         break;
                     }
+                }
+                if(i == labels.size){
+                    printf("ERROR: Label '%s' not found\n", label);
+                    exit(1);
                 }
             }
             write_memory(cpu, address, encoding, encoding_length);

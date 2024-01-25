@@ -37,6 +37,7 @@ typedef struct cpu{
             bool sf;
             bool zf;
             bool cf;
+            bool kf;
         } flags;
     } flags;
     

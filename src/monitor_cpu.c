@@ -129,26 +129,26 @@ void update_cpu_buffer(CHAR_INFO buffer[], sim* s, char* decoded_instructions[],
 
     line_format =
         "| rax | 0x%-16llx | %20llu | r8  | 0x%-16llx | %20llu | |  OVERFLOW | %d |\n";
-    copy_to_console_buffer(&buffer, line_format, cpu->rax, cpu->rax, cpu->r8, cpu->r8, cpu->of);
+    copy_to_console_buffer(&buffer, line_format, cpu->rax, cpu->rax, cpu->r8, cpu->r8, cpu->flags.flags.cf);
 
     line_format =
         "| rbx | 0x%-16llx | %20llu | r9  | 0x%-16llx | %20llu | |  ZERO     | %d |\n";
-    copy_to_console_buffer(&buffer, line_format, cpu->rbx, cpu->rbx, cpu->r9, cpu->r9, cpu->zf);
+    copy_to_console_buffer(&buffer, line_format, cpu->rbx, cpu->rbx, cpu->r9, cpu->r9, cpu->flags.flags.zf);
 
     line_format =
         "| rcx | 0x%-16llx | %20llu | r10 | 0x%-16llx | %20llu | |  SIGN     | %d |\n";
-    copy_to_console_buffer(&buffer, line_format, cpu->rcx, cpu->rcx, cpu->r10, cpu->r10, cpu->sf);
+    copy_to_console_buffer(&buffer, line_format, cpu->rcx, cpu->rcx, cpu->r10, cpu->r10, cpu->flags.flags.sf);
 
     line_format =
         "| rdx | 0x%-16llx | %20llu | r11 | 0x%-16llx | %20llu | |  CARRY    | %d |\n";
-    copy_to_console_buffer(&buffer, line_format, cpu->rdx, cpu->rdx, cpu->r11, cpu->r11, cpu->cf);
+    copy_to_console_buffer(&buffer, line_format, cpu->rdx, cpu->rdx, cpu->r11, cpu->r11, cpu->flags.flags.cf);
 
     line_format =
-        "| rsi | 0x%-16llx | %20llu | r12 | 0x%-16llx | %20llu | +-----------+---+\n";
-    copy_to_console_buffer(&buffer, line_format, cpu->rsi, cpu->rsi, cpu->r12, cpu->r12);
+        "| rsi | 0x%-16llx | %20llu | r12 | 0x%-16llx | %20llu | |  KERNEL   | %d |\n";
+    copy_to_console_buffer(&buffer, line_format, cpu->rsi, cpu->rsi, cpu->r12, cpu->r12, cpu->flags.flags.kf);
 
     line_format =
-        "| rdi | 0x%-16llx | %20llu | r13 | 0x%-16llx | %20llu |\n";
+        "| rdi | 0x%-16llx | %20llu | r13 | 0x%-16llx | %20llu | +-----------+---+\n";
     copy_to_console_buffer(&buffer, line_format, cpu->rdi, cpu->rdi, cpu->r13, cpu->r13);
 
     line_format =
@@ -271,6 +271,7 @@ int main(){
         if(!WriteConsoleOutput(h, buffer, buffer_size, buffer_coord, &write_region)){
             printf("Error: %lu\n", GetLastError());
         }
+        SetConsoleCursorPosition(h, buffer_coord);
     }
 }
 
