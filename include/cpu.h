@@ -53,24 +53,19 @@ typedef struct cpu{
     unsigned long long interrupt_clock;
 } cpu;
 
-typedef struct sim{
-    cpu cpu;
-    enum modes {CONTINUOUS, STEP, EXIT} mode;
-    bool running;
-} sim;
-
 //NOTE: Must be in the same order as the interrupt table
 typedef enum interrupt_type{
     HALT_INTRPT,
     CLOCK_INTRPT
 } interrupt_type;
 
-sim* get_sim();
-void reset_sim(sim* s);
 cpu* init_cpu();
 void dump_cpu(cpu cpu);
-void run_sim(sim* s);
-void encode_file(FILE* fp, cpu* cpu);
+unsigned char* read_memory(cpu* cpu, unsigned long long address);
+void write_memory(cpu* cpu, unsigned long long address, unsigned char* value, int length);
+void encode_file(FILE* fp, cpu* cpu, unsigned long long start_address);
 void execute_instruction(cpu* cpu, unsigned char* instruction);
+void execute_current_instruction(cpu* cpu);
+
 
 #endif

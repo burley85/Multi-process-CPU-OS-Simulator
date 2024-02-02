@@ -123,7 +123,7 @@ Kernel commands:
         BBBB: general purpose register encoding
     11111011 BBBBAAAA: get control register
         BBBB: general purpose register encoding
-        AAAA: control register encoding (0000 for mmu base, 0001 for mmu limit, 0010 for flags, 0011 for interrupt clock)
+        AAAA: control register encoding (0000 for clock_cycles, 0001 for interrupt clock, 0010 for flags, 0011 for mmu base, 0100 for mmu limit)
     11111111: halt
 
 Aliases:

@@ -96,7 +96,14 @@ char* current_token_str(Parser *p){
         sprintf(constLiteral, "%llu", p->lastLiteralValue);
         return constLiteral;
     }
-    else return token_to_str(p->tokenType);
+    else if(p->tokenType == LABEL){
+        char* label = malloc(64);
+        memset(label, 0, 64);
+        if(p->isFile) fscanf(p->fileOrString, "%63[a-zA-Z0-9_]", label);
+        else sscanf((char*) (p->fileOrString) + p->position, "%63[a-zA-Z0-9_]", label);
+        return label;
+    }
+    return token_to_str(p->tokenType);
 }
 
 int current_token(Parser *p){

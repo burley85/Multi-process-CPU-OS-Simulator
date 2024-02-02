@@ -8,41 +8,6 @@
 #include "helper.h"
 #include "encoding.h"
 
-#define OBJ_NAME "SimCPUObj"
-#define SIM_MODE STEP
-
-//Sim gets reset every time main program is run or object is created
-void reset_sim(sim* s){
-    memset(&(s->cpu), 0, sizeof(cpu));
-    s->mode = SIM_MODE;
-}
-
-sim* get_sim(){
-    HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, 0, OBJ_NAME);
-    bool fileExisted = (hMapFile != NULL);
-    if(!fileExisted){
-        //Create the object
-        int maxSizeHigh = sizeof(sim) >> 32;
-        int maxSizeLow = sizeof(sim) - maxSizeHigh;
-        hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, maxSizeHigh, maxSizeLow, OBJ_NAME);
-        if(hMapFile == NULL){
-            printf("ERROR: Failed to share sim object\n");
-            exit(1);
-        }
-    }
-
-
-    sim* simPtr = (sim*) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(sim));
-    if(simPtr == NULL){
-        printf("ERROR: Failed to map sim object\n");
-        exit(1);
-    }
-
-    if(!fileExisted) reset_sim(simPtr);
-
-    return simPtr;  
-}
-
 cpu* init_cpu(){
     cpu* cpuPtr = malloc(sizeof(cpu));
     if(cpuPtr == NULL){
@@ -177,7 +142,10 @@ unsigned long long* get_control_register(cpu* cpu, unsigned char control_registe
         
 
 void clear_flags(cpu* cpu){
-    cpu->flags.flag_register = 0;
+    cpu->flags.flags.of = 0;
+    cpu->flags.flags.sf = 0;
+    cpu->flags.flags.zf = 0;
+    cpu->flags.flags.cf = 0;
 }
 
 void execute_add_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
@@ -230,7 +198,7 @@ void execute_assignment_instruction(cpu* cpu, unsigned long long *operand1, unsi
 
 void execute_load_instruction(cpu* cpu, unsigned long long *operand1, unsigned long long operand2){
     unsigned char* memPtr = read_memory(cpu, operand2);
-    unsigned long long result = (unsigned long long) *memPtr;
+    unsigned long long result = *((unsigned long long*) memPtr);
 
     assign(cpu, operand1, result);
 }
@@ -476,21 +444,16 @@ void execute_instruction(cpu* cpu, unsigned char* instruction){
     cpu->rip += instruction_length;
 }
 
-void run_sim(sim* s){
-    cpu* cpu = &(s->cpu);
-    s->running = true;
-
+void execute_current_instruction(cpu* cpu){
     unsigned char* instruction = read_memory(cpu, cpu->rip);
-    while(1){
-        execute_instruction(cpu, instruction);
-        instruction = read_memory(cpu, cpu->rip);
-        if(instruction == NULL){
-            s->mode = EXIT;
-            return;
-        }
-        if(s->mode == STEP) s->running = false;
-        while(!s->running){}
+    
+    if(instruction == NULL){
+        printf("ERROR: Failed to read instruction at rip %llx\n", cpu->rip);
+        dump_cpu(*cpu);
+        exit(1);
     }
+
+    execute_instruction(cpu, instruction);
 }
 
 //Replaces #define keys with their values, and removes comments
@@ -547,39 +510,44 @@ FILE* preprocess_file(FILE* fp){
         
         else{
             //Iterate through each word in the line and check if it is a key
-            char* str = malloc(strlen(line) + 1);
-            memset(str, 0, strlen(line) + 1);
             int line_pos = 0;
-
             while(line_pos < strlen(line)){
 
                 char first_char = line[line_pos];
                 //If first character is in [A-Za-Z0-9_] then read until next character not in [A-Za-Z0-9_]
                 if((first_char >= 'A' && first_char <= 'Z') || (first_char >= 'a' && first_char <= 'z') || first_char == '_'){
+                    char* str = malloc(strlen(line) + 1);
+                    memset(str, 0, strlen(line) + 1);
                     sscanf(line + line_pos, "%[A-Za-z0-9_]", str);
                     line_pos += strlen(str);
                     
                     //Check if the string is a key (can't be a key if first character is in [0-9])
+                    bool is_key = false;
                     if(!(str[0] >= '0' && str[0] <= '9')){  
                         for(int i = 0; i < keys.size; i++){
                             char* key = *((char**) getDynamicArray(&keys, i));
                             if(strcmp(key, str) == 0){
                                 free(str);
                                 str = *((char**) getDynamicArray(&values, i));
+                                is_key = true;
                                 break;
                             }
                         }
                     }
                     //Print the string to the file
                     fprintf(temp, "%s", str);
+                    if(!is_key) free(str);
                 }
                 //If first character is in [0-9] then read until next character not in [A-Za-z0-9_]
                 else if(first_char >= '0' && first_char <= '9'){
+                    char* str = malloc(strlen(line) + 1);
+                    memset(str, 0, strlen(line) + 1);
                     sscanf(line + line_pos, "%[A-Za-z0-9_]", str);
                     line_pos += strlen(str);
 
                     //Print the string to the file
                     fprintf(temp, "%s", str);
+                    free(str);
                 }
                 //Otherwise, print that character to the file
                 else{
@@ -599,7 +567,7 @@ FILE* preprocess_file(FILE* fp){
     return temp;
 }
 
-void encode_file(FILE* fp, cpu* cpu){
+void encode_file(FILE* fp, cpu* cpu, unsigned long long start_address){
     fp = preprocess_file(fp);
     if(fp == NULL){
         printf("ERROR: Failed to preprocess file\n");
@@ -609,7 +577,7 @@ void encode_file(FILE* fp, cpu* cpu){
     DynamicArray labels = createDynamicArray(0, sizeof(char*), true);
     DynamicArray label_addresses = createDynamicArray(0, sizeof(unsigned long long), false);
     //Initial pass to look for labels and find their addresses
-    unsigned long long address = cpu->mmu.base;
+    unsigned long long address = start_address;
     while(!feof(fp)){
         char* instruction = fgettrimmedline(fp, NULL);
         if(instruction == NULL) exit(1);
@@ -649,7 +617,7 @@ void encode_file(FILE* fp, cpu* cpu){
     }
 
     fseek(fp, 0, SEEK_SET);
-    address = 0;
+    address = start_address;
 
     while(!feof(fp)){
         char* instruction = fgettrimmedline(fp, NULL);
@@ -686,8 +654,6 @@ void encode_file(FILE* fp, cpu* cpu){
             free(encoding);
         }
     }
-    unsigned char halt = HALT_ENCODING;
-    write_memory(cpu, address, &halt, 1);
 
     //Free labels
     destroyDynamicArray(&labels);
