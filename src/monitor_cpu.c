@@ -6,6 +6,8 @@
 #include "cpu.h"
 #include "decoding.h"
 #include "helper.h"
+#include "pcb.h"
+#include "sim.h"
 
 #define CONSOLE_WIDTH 120
 #define CONSOLE_HEIGHT 30
@@ -173,23 +175,24 @@ void update_cpu_buffer(CHAR_INFO buffer[], sim* s, char* decoded_instructions[],
 
     line_format = 
         "| rip  --->  |   %48s | | INTERRUPT CLOCK   | %20llu clocks |\n";
-    copy_to_console_buffer(&buffer, line_format, decoded_instructions[0], 0);
+    copy_to_console_buffer(&buffer, line_format, decoded_instructions[0], cpu->interrupt_clock);
 
     line_format = 
         "| rip + 0x%-2llx |   %48s | | QUANTUM           | %6llu / %6llu      clocks |\n";
-    copy_to_console_buffer(&buffer, line_format, instruction_positions[1], decoded_instructions[1], 0, 0);
+    copy_to_console_buffer(&buffer, line_format, instruction_positions[1], decoded_instructions[1], cpu->interrupt_clock, 1000);
 
     line_format = 
         "| rip + 0x%-2llx |   %48s | | PROC CPU TIME     | %20llu clocks |\n";
-    copy_to_console_buffer(&buffer, line_format, instruction_positions[2], decoded_instructions[2], 0, 0);
+    copy_to_console_buffer(&buffer, line_format, instruction_positions[2], decoded_instructions[2], 0);
 
     line_format = 
         "| rip + 0x%-2llx |   %48s | | PROC ELAPSED TIME | %20llu clocks |\n";
-    copy_to_console_buffer(&buffer, line_format, instruction_positions[3], decoded_instructions[3], 0, 0);
+    copy_to_console_buffer(&buffer, line_format, instruction_positions[3], decoded_instructions[3], 0);
 
+    unsigned long long pid = *((unsigned long long*) &(cpu->memory[PCB_TABLE_START]));
     line_format = 
         "| rip + 0x%-2llx |   %48s | | PID               |        %20llu |\n";
-    copy_to_console_buffer(&buffer, line_format, instruction_positions[4], decoded_instructions[4], 0, 0);
+    copy_to_console_buffer(&buffer, line_format, instruction_positions[4], decoded_instructions[4], pid);
 
     line_format =
         "+------------+----------------------------------------------------+ +-------------------+-----------------------------+\n";
@@ -262,7 +265,7 @@ int main(){
     while(1){
         update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
         update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
-        if(s->mode == STEP && !s->running){
+        if(s->mode != EXIT && !s->running){
             update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
             update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
             scanf("%*c");

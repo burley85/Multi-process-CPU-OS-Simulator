@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "sim.h"
+#include "breakpoint.h"
 
 #define OBJ_NAME "SimCPUObj"
 #define SIM_MODE STEP
@@ -8,6 +9,7 @@
 void reset_sim(sim* s){
     memset(&(s->cpu), 0, sizeof(cpu));
     s->mode = SIM_MODE;
+    s->breakpoints = createDynamicArray(0, sizeof(breakpoint), true);
 }
 
 sim* get_sim(){
@@ -43,8 +45,7 @@ void run_sim(sim* s){
     while(1){
         execute_current_instruction(cpu);
 
-        if(s->cpu.rip == 12928) s->mode = STEP;
-        if(s->mode == STEP) s->running = false;
+        if(s->mode == STEP || check_breakpoints(s)) s->running = false;
         while(!s->running){}
     }
 }

@@ -1,12 +1,14 @@
-#ifndef SIM_H_
-#define SIM_H_
+#ifndef SIM_H
+#define SIM_H
 
 #include "cpu.h"
+#include "helper.h"
 
 typedef struct sim{
     cpu cpu;
     enum modes {CONTINUOUS, STEP, EXIT} mode;
     bool running;
+    DynamicArray breakpoints;
 } sim;
 
 sim* get_sim();
