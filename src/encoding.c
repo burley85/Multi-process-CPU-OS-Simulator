@@ -367,6 +367,13 @@ unsigned char* encode_return(Parser *p, int* encoding_length){
     return encoded_instruction;
 }
 
+unsigned char* encode_int_return(Parser *p, int* encoding_length){
+    *encoding_length = 1;
+    unsigned char* encoded_instruction = malloc(1);
+    encoded_instruction[0] = IRET_ENCODING;
+    return encoded_instruction;
+}
+
 unsigned char* encode_halt(Parser *p, int* encoding_length){
     *encoding_length = 1;
     unsigned char* encoded_instruction = malloc(1);
@@ -436,7 +443,7 @@ unsigned char* encode_instruction(char *instruction, int* encoding_length) {
     if(token == HALT) return encode_halt(&p, encoding_length);
     if(token == CALL) return encode_call(&p, encoding_length);
     if(token == RET) return encode_return(&p, encoding_length);
-
+    if(token == IRET) return encode_int_return(&p, encoding_length);
     if(token != LABEL){
         printf("ERROR: Expected register, jump, label, halt, or LPAREN, got %s\n", current_token_str(&p));
     }

@@ -183,6 +183,7 @@ Aliases:
 #define POP_RIP_ENCODING 0b11111010
 #define SET_CONTROL_REGISTER_ENCODING 0b11111011
 #define GET_CONTROL_REGISTER_ENCODING 0b11111100
+#define IRET_ENCODING 0b11111101
 #define HALT_ENCODING 0b11111111
 
 unsigned char* encode_instruction(char *instruction, int* encoding_length);

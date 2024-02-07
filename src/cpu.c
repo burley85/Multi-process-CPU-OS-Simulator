@@ -420,7 +420,7 @@ void execute_instruction(cpu* cpu, unsigned char* instruction){
             unsigned char* mem = read_memory(cpu, cpu->rsp);
             memcpy(&new_rip, mem, 8);
             assign(cpu, &(cpu->rip), new_rip);
-            cpu->rsp += 8;
+            cpu->rsp = add(cpu, cpu->rsp, 8);
             instruction_length = 0;
         }
         else if(operation == SET_CONTROL_REGISTER_ENCODING)
@@ -428,6 +428,15 @@ void execute_instruction(cpu* cpu, unsigned char* instruction){
         else if(operation == GET_CONTROL_REGISTER_ENCODING)
                 instruction_length = execute_get_cr_instruction(cpu, instruction);
         else if(operation == HALT_ENCODING) execute_interrupt(cpu, HALT_INTRPT);
+        else if(operation == IRET_ENCODING){
+            cpu->flags.flags.kf = 0;            
+            unsigned long long new_rip;
+            unsigned char* mem = read_memory(cpu, cpu->rsp);
+            memcpy(&new_rip, mem, 8);
+            assign(cpu, &(cpu->rip), new_rip);
+            cpu->rsp = add(cpu, cpu->rsp, 8);
+            instruction_length = 0;
+        }
         else{
             printf("ERROR: Invalid kernel command\n");
             dump_cpu(*cpu);
