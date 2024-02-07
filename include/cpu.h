@@ -63,7 +63,6 @@ cpu* init_cpu();
 void dump_cpu(cpu cpu);
 unsigned char* read_memory(cpu* cpu, unsigned long long address);
 void write_memory(cpu* cpu, unsigned long long address, unsigned char* value, int length);
-void encode_file(FILE* fp, cpu* cpu, unsigned long long start_address);
 void execute_instruction(cpu* cpu, unsigned char* instruction);
 void execute_current_instruction(cpu* cpu);
 
