@@ -2,17 +2,22 @@
 #include "sim.h"
 #include "breakpoint.h"
 #include "encoding.h"
+#include "symbol_map.h"
 
 #define OBJ_NAME "SimCPUObj"
-#define SIM_MODE STEP
+#define SIM_MODE CONTINUOUS
 
 //Sim gets reset every time main program is run or object is created
 void reset_sim(sim* s){
     memset(&(s->cpu), 0, sizeof(cpu));
-    s->mode = SIM_MODE;
+    s->mode = LOAD;
     s->breakpoints = createDynamicArray(0, sizeof(breakpoint), true);
+    
+    //Clear label map
     s->labels = createDynamicArray(0, sizeof(char*), true);
     s->label_addresses = createDynamicArray(0, sizeof(unsigned long long), false);
+    FILE *fp = fopen(LABEL_MAP_FILENAME, "w");
+    if(fp != NULL) fclose(fp);
 }
 
 sim* get_sim(){
@@ -43,6 +48,7 @@ sim* get_sim(){
 
 void run_sim(sim* s){
     cpu* cpu = &(s->cpu);
+    s->mode = SIM_MODE;
     s->running = true;
     
     while(1){
@@ -175,6 +181,7 @@ void encode_file(FILE* fp, sim* sim, unsigned long long start_address){
 
     DynamicArray *labels = &(sim->labels);
     DynamicArray *label_addresses = &(sim->label_addresses);
+    FILE* label_fp = fopen(LABEL_MAP_FILENAME, "a");
     //Initial pass to look for labels and find their addresses
     unsigned long long address = start_address;
     while(!feof(fp)){
@@ -202,10 +209,13 @@ void encode_file(FILE* fp, sim* sim, unsigned long long start_address){
             strncpy(label, instruction, instruction_length);
             label[instruction_length - 1] = '\0';
             //Add the label to the symbol table
-            if(appendDynamicArray(labels, &label) == NULL || appendDynamicArray(label_addresses, &address) == NULL){
+            if(appendDynamicArray(labels, &label) == NULL
+                    || appendDynamicArray(label_addresses, &address) == NULL
+                    || fprintf(label_fp, "%s %llu\n", label, address) < 0){
                 printf("ERROR: Failed to add label to symbol table\n");
                 exit(1);
             }
+            sim->label_count++;
         }
         else{
             int encoding_length;
@@ -255,4 +265,5 @@ void encode_file(FILE* fp, sim* sim, unsigned long long start_address){
             free(encoding);
         }
     }
+    fclose(label_fp);
 }

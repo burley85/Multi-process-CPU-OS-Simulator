@@ -8,6 +8,7 @@
 #include "helper.h"
 #include "pcb.h"
 #include "sim.h"
+#include "symbol_map.h"
 
 #define CONSOLE_WIDTH 120
 #define CONSOLE_HEIGHT 30
@@ -44,12 +45,12 @@ void copy_to_console_buffer(CHAR_INFO* buffer[], char* formatted_string, ...){
     *buffer += buffer_size.X;
 }
 
-void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instruction_positions[]){
+void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instruction_positions[], symbol_map symbols){
     unsigned long long pos = c->rip;
     int encoding_length;
 
     if(decoded_instructions[0] != NULL) free(decoded_instructions[0]);
-    decoded_instructions[0] = decode_instruction(&(c->memory[pos]), &encoding_length);
+    decoded_instructions[0] = decode_instruction(&(c->memory[pos]), &encoding_length, symbols);
     pos += encoding_length;
     instruction_positions[1] = pos - c->rip; //Address of next instruction relative to rip
     if(strlen(decoded_instructions[0]) > 48){ //make last 3 characters "..."
@@ -59,7 +60,7 @@ void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instr
     }
 
     if(decoded_instructions[1] != NULL) free(decoded_instructions[1]);
-    decoded_instructions[1] = decode_instruction(&(c->memory[pos]), &encoding_length);
+    decoded_instructions[1] = decode_instruction(&(c->memory[pos]), &encoding_length, symbols);
     pos += encoding_length;
     instruction_positions[2] = pos - c->rip; //Address of next instruction relative to rip
     if(strlen(decoded_instructions[1]) > 48){ //make last 3 characters "..."
@@ -69,7 +70,7 @@ void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instr
     }
 
     if(decoded_instructions[2] != NULL) free(decoded_instructions[2]);
-    decoded_instructions[2] = decode_instruction(&(c->memory[pos]), &encoding_length);
+    decoded_instructions[2] = decode_instruction(&(c->memory[pos]), &encoding_length, symbols);
     pos += encoding_length;
     instruction_positions[3] = pos - c->rip; //Address of next instruction relative to rip
     if(strlen(decoded_instructions[2]) > 48){ //make last 3 characters "..."
@@ -79,7 +80,7 @@ void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instr
     }
 
     if(decoded_instructions[3] != NULL) free(decoded_instructions[3]);
-    decoded_instructions[3] = decode_instruction(&(c->memory[pos]), &encoding_length);
+    decoded_instructions[3] = decode_instruction(&(c->memory[pos]), &encoding_length, symbols);
     pos += encoding_length;
     instruction_positions[4] = pos - c->rip; //Address of next instruction relative to rip
     if(strlen(decoded_instructions[3]) > 48){ //make last 3 characters "..."
@@ -89,7 +90,7 @@ void update_decoded_instructions(cpu* c, char* decoded_instructions[], int instr
     }
 
     if(decoded_instructions[4] != NULL) free(decoded_instructions[4]);
-    decoded_instructions[4] = decode_instruction(&(c->memory[pos]), &encoding_length);
+    decoded_instructions[4] = decode_instruction(&(c->memory[pos]), &encoding_length, symbols);
     pos += encoding_length;
     if(strlen(decoded_instructions[4]) > 48){ //make last 3 characters "..."
         decoded_instructions[4][45] = '.';
@@ -249,6 +250,28 @@ void update_cpu_buffer(CHAR_INFO buffer[], sim* s, char* decoded_instructions[],
     copy_to_console_buffer(&buffer, line_format, 0, 0);
 }
 
+void load_symbols(symbol_map* map){
+    FILE* symbol_fp = fopen(LABEL_MAP_FILENAME, "r");
+
+    if(symbol_fp != NULL){
+        char line[1024];
+        for(int i = 0; i < map->label_count; i++){
+            fgets(line, sizeof(line), symbol_fp);
+            char* label = malloc(strlen(line));
+            unsigned long long address = 0;
+            sscanf(line, "%s %llu", label, &address);
+            map->labels[i] = label;
+            map->label_addresses[i] = address;
+        }
+    }
+    else{
+        printf("Error: Could not open %s\n", LABEL_MAP_FILENAME);
+        exit(1);
+    }
+
+    fclose(symbol_fp);
+}
+
 int main(){
     //Get HANDLE to the console
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -257,16 +280,28 @@ int main(){
     CHAR_INFO buffer[3600] = {0};
 
     sim* s = get_sim();
-    cpu* cpu = &(s->cpu);
 
     char* decoded_instructions[5] = {NULL, NULL, NULL, NULL, NULL};
     int instruction_positions[5] = {0, 0, 0, 0, 0};
 
+    //Wait until sim has loaded
+    while(s->mode == LOAD);
+
+    char** labels = malloc(sizeof(char*) * s->label_count);
+    unsigned long long* label_addresses = malloc(sizeof(unsigned long long) * s->label_count);
+    if(labels == NULL || label_addresses == NULL){
+        printf("Error: Could not allocate memory for labels and label_addresses\n");
+        exit(1);
+    }
+
+    symbol_map symbols = {labels, label_addresses, s->label_count};
+    load_symbols(&symbols);
     while(1){
-        update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
+
+        update_decoded_instructions(&(s->cpu), decoded_instructions, instruction_positions, symbols);
         update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
         if(s->mode != EXIT && !s->running){
-            update_decoded_instructions(cpu, decoded_instructions, instruction_positions);
+            update_decoded_instructions(&(s->cpu), decoded_instructions, instruction_positions, symbols);
             update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
             scanf("%*c");
             s->running = true;

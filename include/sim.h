@@ -4,13 +4,16 @@
 #include "cpu.h"
 #include "helper.h"
 
+#define LABEL_MAP_FILENAME "symbols.o"
+
 typedef struct sim{
     cpu cpu;
-    enum modes {CONTINUOUS, STEP, EXIT} mode;
+    enum {CONTINUOUS, STEP, EXIT, LOAD} mode;
     bool running;
     DynamicArray breakpoints;
     DynamicArray labels;
     DynamicArray label_addresses;
+    int label_count;
 } sim;
 
 sim* get_sim();

@@ -3,7 +3,21 @@
 #include <stdlib.h>
 
 #include "encoding.h"
-#include "helper.h"
+#include "decoding.h"
+#include "symbol_map.h"
+
+char* decode_control_register(unsigned char register_encoding){
+    register_encoding = last_n_bits(register_encoding, 4);
+
+    switch(register_encoding){
+        case CR0_ENCODING: return "cr0";
+        case CR1_ENCODING: return "cr1";
+        case CR2_ENCODING: return "cr2";
+        case CR3_ENCODING: return "cr3";
+        case CR4_ENCODING: return "cr4";
+        default: return NULL;
+    }
+}
 
 char* decode_register(unsigned char register_encoding){
     register_encoding = last_n_bits(register_encoding, 4);
@@ -43,6 +57,12 @@ char* decode_literal(unsigned char* encoding, int encoding_bytes){
     return ull_to_str(literal);
 }
 
+char* decode_address(unsigned long long address, symbol_map symbols){
+    for(int i = 0; i < symbols.label_count; i++){
+        if(symbols.label_addresses[i] == address) return symbols.labels[i];
+    }
+    return NULL;
+}
 
 char* decode_arithmetic_instruction(unsigned char* encoded_instruction, int* encoding_length){
     char operator;
@@ -157,7 +177,7 @@ char* decode_store_instruction(unsigned char* encoded_instruction, int* encoding
     return instruction;
 }
 
-char* decode_jump_instruction(unsigned char* encoded_instruction, int* encoding_length){
+char* decode_jump_instruction(unsigned char* encoded_instruction, int* encoding_length, symbol_map symbols){
     char* jump_type = "";
     switch(first_n_bits(encoded_instruction[0], 4)){
         case JMP_ENCODING: jump_type = "jmp"; break;
@@ -173,42 +193,57 @@ char* decode_jump_instruction(unsigned char* encoded_instruction, int* encoding_
 
     char* operand1;
     char operand1Length = last_n_bits(encoded_instruction[0], 4);
-    bool operand1_is_register = false;
+    bool free_operand = false;
     if(operand1Length == 0){
-        operand1_is_register = true;
+        free_operand = true;
         *encoding_length = 2;
         operand1 = decode_register(first_n_bits(encoded_instruction[1], 4));
     }
     else{
         *encoding_length = 1 + operand1Length;
+
         unsigned long long operand1Value = 0;
         memcpy(&operand1Value, encoded_instruction + 1, operand1Length);
-        operand1 = malloc(19);
-        sprintf(operand1, "0x%llX", operand1Value);
+
+        operand1 = decode_address(operand1Value, symbols);
+        if(operand1 == NULL){ //Operand is not a label
+            operand1 = malloc(19);
+            free_operand = true;
+            sprintf(operand1, "0x%llX", operand1Value);
+        }
     }
 
     char* instruction = malloc(strlen(jump_type) + strlen(operand1) + 2);
     sprintf(instruction, "%s %s", jump_type, operand1);
     
-    if(!operand1_is_register) free(operand1);
+    if(free_operand) free(operand1);
 
     return instruction;
 }
 
-char* decode_push_rip_instruction(unsigned char* encoded_instruction, int* encoding_length){
+char* decode_push_rip_instruction(unsigned char* encoded_instruction, int* encoding_length, symbol_map symbols){
     *encoding_length = 1;
     //Check if instruction is a call (next instruction is a jmp)
     if(first_n_bits(encoded_instruction[1], 4) == JMP_ENCODING){
         char* operand1;
         unsigned long long operand1Value = 0;
         memcpy(&operand1Value, encoded_instruction + 2, 8);
-        operand1 = malloc(19);
-        sprintf(operand1, "0x%llX", operand1Value);
-        char* instruction = malloc(strlen(operand1) + 6);
-        sprintf(instruction, "call %s", operand1);
-        free(operand1);
         *encoding_length = 10;
-        return instruction;
+
+        operand1 = decode_address(operand1Value, symbols);
+        if(operand1 == NULL){ //Address does not correspond to a label
+            operand1 = malloc(19);
+            sprintf(operand1, "0x%llX", operand1Value);
+            char* instruction = malloc(strlen(operand1) + 6);
+            sprintf(instruction, "call %s", operand1);
+            free(operand1);
+            return instruction;
+        }
+        else{
+            char* instruction = malloc(strlen(operand1) + 6);
+            sprintf(instruction, "call %s", operand1);
+            return instruction;
+        }
     }
     else{
         char* instruction = malloc(9);
@@ -218,22 +253,40 @@ char* decode_push_rip_instruction(unsigned char* encoded_instruction, int* encod
     }
 }
 
-char* decode_pop_rip_instruction(unsigned char* encoded_instruction, int* encoding_length){
-    *encoding_length = 1;
-    char* instruction = malloc(4);
-    strcpy(instruction, "ret");
+char* decode_set_control_register(unsigned char* encoded_instruction, int* encoding_length){
+    *encoding_length = 2;
+    char* instruction = malloc(10);
+
+    char* operand1 = decode_control_register(first_n_bits(encoded_instruction[1], 4));
+    char* operand2 = decode_register(last_n_bits(encoded_instruction[1], 4));
+
+    sprintf(instruction, "%s = %s", operand1, operand2);
     return instruction;
 }
 
-char* decode_instruction(unsigned char* encoded_instruction, int* encoding_length){
+char* decode_get_control_register(unsigned char* encoded_instruction, int* encoding_length){
+    *encoding_length = 2;
+    char* instruction = malloc(10);
+
+    char* operand1 = decode_register(first_n_bits(encoded_instruction[1], 4));
+    char* operand2 = decode_control_register(last_n_bits(encoded_instruction[1], 4));
+
+    sprintf(instruction, "%s = %s", operand1, operand2);
+    return instruction;
+}
+
+char* decode_instruction(unsigned char* encoded_instruction, int* encoding_length, symbol_map symbols){
     char* decoding;
     if(encoded_instruction[0] >= KERNEL_COMMAND_ENCODING){
         *encoding_length = 1;
-        decoding = malloc(10);
+        decoding = malloc(5);
         switch(encoded_instruction[0]){
-            case PUSH_RIP_ENCODING: decoding = decode_push_rip_instruction(encoded_instruction, encoding_length); break;
-            case POP_RIP_ENCODING: strcpy(decoding, "pop rip"); break;
+            case PUSH_RIP_ENCODING: decoding = decode_push_rip_instruction(encoded_instruction, encoding_length, symbols); break;
+            case POP_RIP_ENCODING: strcpy(decoding, "ret"); break;
             case HALT_ENCODING: strcpy(decoding, "halt"); break;
+            case GET_CONTROL_REGISTER_ENCODING: decoding = decode_get_control_register(encoded_instruction, encoding_length); break;
+            case SET_CONTROL_REGISTER_ENCODING: decoding = decode_set_control_register(encoded_instruction, encoding_length); break;
+            case IRET_ENCODING: strcpy(decoding, "iret"); break;
         }
     }
     else{
@@ -252,7 +305,7 @@ char* decode_instruction(unsigned char* encoded_instruction, int* encoding_lengt
                 decoding = decode_store_instruction(encoded_instruction, encoding_length);
                 break;
             default:
-                decoding = decode_jump_instruction(encoded_instruction, encoding_length);
+                decoding = decode_jump_instruction(encoded_instruction, encoding_length, symbols);
                 break;
         }
     }
