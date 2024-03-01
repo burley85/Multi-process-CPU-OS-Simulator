@@ -1,7 +1,8 @@
 from Compiler import Compiler, TokenType
+from nodes.ASTNode import ASTNode
 
 '''<comparison> ::= <id_or_literal> <comparison_op> <id_or_literal>'''
-class Comparison:
+class Comparison(ASTNode):
     def __init__(self):
         self.op1 = None
         self.operator = None

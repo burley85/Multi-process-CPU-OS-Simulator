@@ -1,10 +1,10 @@
 from Compiler import Compiler, TokenType
 from nodes.MethodHeader import MethodHeader
 from nodes.Block import Block
-
+from nodes.ASTNode import ASTNode
 
 '''<method> ::= <method_header> <block>'''
-class Method:
+class Method(ASTNode):
     def __init__(self):
         self.method_header = None
         self.block = None

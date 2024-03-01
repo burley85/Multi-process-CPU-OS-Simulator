@@ -2,10 +2,11 @@ import sys
 from Compiler import Compiler, Token, TokenType
 from nodes.Call import Call
 from nodes.Comparison import Comparison
+from nodes.ASTNode import ASTNode
 
 '''<expression> ::= <id_or_literal> | "*" <identifier> | "&" <identifier> | "!" <id_or_literal> |
                     <comparison> | <call>'''
-class Expression:
+class Expression(ASTNode):
     def __init__(self):
         self.child : Token | Comparison | Call = None
         self.unaryOperator : TokenType = None

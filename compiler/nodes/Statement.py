@@ -1,9 +1,10 @@
-from abc import ABC, abstractmethod, abstractproperty
 from Compiler import Compiler, TokenType
+from nodes.ASTNode import ASTNode
+from abc import abstractmethod
 
 '''<statement> ::= <if_statement> | <while_statement> | <for_statement> | <return_statement> |
                    <block> | <arithmetic_statement> | ";"'''
-class Statement(ABC):    
+class Statement(ASTNode):    
     @staticmethod
     def parse(compiler : Compiler, stackOffset):
         #import IfStatement as IfStatement
@@ -28,14 +29,6 @@ class Statement(ABC):
 
         else: statement = EmptyStatement.EmptyStatement()
         return statement
-        
-    @abstractmethod
-    def print(self, file, indent = ""):
-        ...
-    
-    @abstractmethod
-    def compile(self, compiler : Compiler, file):
-        ...
 
     @property
     @abstractmethod

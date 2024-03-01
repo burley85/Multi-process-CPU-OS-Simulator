@@ -1,9 +1,10 @@
 from Compiler import Compiler, TokenType
 from nodes.Expression import Expression
+from nodes.ASTNode import ASTNode
 
 '''<assignment> ::= <l_value> <assign_op> <expression> | <l_value> "++" | <l_value> "--"
    <l_value> ::= <identifier> | "*" <identifier>'''
-class Assignment:
+class Assignment(ASTNode):
     def __init__(self):
         self.lValueID = None
         self.lValueRefDepth = 0

@@ -1,12 +1,13 @@
 from enum import Enum
 from Compiler import Compiler, TokenType
+from nodes.ASTNode import ASTNode
 
 PrimitiveType = Enum("PrimitiveType", "CHAR, SHORT, INT, LONG, LONG_LONG")
 
 '''<type> ::= "unsigned" <primitive_type> | <primitive_type> |
               "unsigned" <primitive_type> <pointer> | <primitive_type> <pointer> | "void" <pointer>
    <pointer> ::= "*" | "*" <pointer>'''
-class Type:
+class Type(ASTNode):
     def __init__(self):
         self.unsigned = False
         self.type = None
@@ -54,3 +55,6 @@ class Type:
         elif(self.type == PrimitiveType.LONG_LONG): print("long long ", end = "")
         else: print(self.type.name.lower() + " ", end = "")
         print("*" * self.pointerDepth, end = "")
+
+    def compile(self, compiler: Compiler, file):
+        pass

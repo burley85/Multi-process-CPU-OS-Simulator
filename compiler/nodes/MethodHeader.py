@@ -1,10 +1,11 @@
 from Compiler import Compiler, TokenType
 from nodes.ReturnType import ReturnType
 from nodes.Declaration import Declaration
+from nodes.ASTNode import ASTNode
 
 '''<method_header> ::= <return_type> <identifier> "(" <parameter_list> ")"
    <parameter_list> ::= "" | <declaration> | <declaration> "," <parameter_list>'''
-class MethodHeader:
+class MethodHeader(ASTNode):
     def __init__(self):
         self.returnType = None
         self.identifier = ""

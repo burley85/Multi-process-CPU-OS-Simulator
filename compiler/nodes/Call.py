@@ -1,8 +1,9 @@
 from Compiler import Compiler, TokenType
+from nodes.ASTNode import ASTNode
 
 '''<call> ::= <identifier> "(" <argument_list> ")" | <identifier> "(" ")"
    <argument_list> ::= <id_or_literal> | <id_or_literal> "," <argument_list>'''
-class Call:
+class Call(ASTNode):
     def __init__(self):
         self.identifier = ""
         self.argument_list = []

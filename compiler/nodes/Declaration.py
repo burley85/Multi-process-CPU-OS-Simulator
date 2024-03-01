@@ -1,8 +1,9 @@
 from Compiler import Compiler, TokenType
 from nodes.Type import Type
+from nodes.ASTNode import ASTNode
 
 '''<declaration> ::= <type> <identifier> | <type> <identifier> "[" <number> "]"'''
-class Declaration:
+class Declaration(ASTNode):
     def __init__(self):
         self.type = None
         self.identifier = ""

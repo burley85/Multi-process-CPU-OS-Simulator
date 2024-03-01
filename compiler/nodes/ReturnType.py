@@ -1,8 +1,9 @@
 from Compiler import Compiler, TokenType
 from nodes.Type import Type
+from nodes.ASTNode import ASTNode
 
 '''<return_type> ::= "void" | <type>'''
-class ReturnType:
+class ReturnType(ASTNode):
     def __init__(self):
         self.type = None
     
@@ -19,3 +20,5 @@ class ReturnType:
         if(self.type == None): print(indent + "void ", file = file, end = "")
         else: self.type.print(file, indent)
 
+    def compile(self, compiler: Compiler, file):
+        pass
