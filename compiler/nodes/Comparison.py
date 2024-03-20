@@ -20,3 +20,83 @@ class Comparison(ASTNode):
     
     def print(self, file, indent = ""):
         print(f"{self.op1} {self.operator} {self.op2}", end = "")
+
+    def compile(self, compiler: Compiler, file):
+        #Load op1 into rax
+        if(self.op1.type == TokenType.IDENTIFIER):
+            decl = compiler.findDeclaration(self.op1.value)
+            print(f"rbp - {decl.stackOffset}", file = file)
+            print("rax = (rbp)", file = file)
+            print(f"rbp + {decl.stackOffset}", file = file)
+        else:
+            print(f"rax = {self.op1.value}", file = file)
+
+        #Load op2 into rbx
+        if(self.op2.type == TokenType.IDENTIFIER):
+            decl = compiler.findDeclaration(self.op2.value)
+            print(f"rbp - {decl.stackOffset}", file = file)
+            print("rbx = (rbp)", file = file)
+            print(f"rbp + {decl.stackOffset}", file = file)
+        else:
+            print(f"rbx = {self.op2.value}", file = file)
+        
+        codeMap = {
+            TokenType.EQUALS:
+                "rax - rbx\n\
+                jnz l1\n\
+                rax = 1\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 0\n\
+                l2:\n",
+            TokenType.NOT_EQUALS:
+                "rax - rbx\n\
+                jz l\n\
+                rax = 1\n\
+                l:\n",
+            TokenType.LESS:
+                "rax - rbx\n\
+                jns l1\n\
+                rax = 1\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 0\n\
+                l2:\n",
+            TokenType.GREATER:
+                "rax - rbx\n\
+                js l1\n\
+                jz l1\n\
+                rax = 1\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 0\n\
+                l2:\n",
+            TokenType.LESS_EQUALS:
+                "rax - rbx\n\
+                js l1\n\
+                jz l1\n\
+                rax = 0\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 1\n\
+                l2:\n",
+            TokenType.GREATER_EQUALS:
+                "rax - rbx\n\
+                jns l1\n\
+                rax = 0\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 1\n\
+                l2:\n",
+            TokenType.AND:
+                "rax * rbx\n\
+                jz l\n\
+                rax = 1\n\
+                l:\n",
+            TokenType.OR:
+                "rax + rbx\n\
+                jz l\n\
+                rax = 1\n\
+                l:\n"
+        }
+        print(codeMap[self.operator], file = file)
