@@ -5,6 +5,7 @@ class Compiler:
         self.tokenizer = Tokenizer(source)
         self.symbolTableList = [] #List of Dictionarys containing id : Declaration pairs
         self.currentMethodIdentifier = ""
+        self.labelCount = 0
     
     def nextToken(self):
         return self.tokenizer.nextToken()
@@ -61,3 +62,7 @@ class Compiler:
 
     def leaveBlock(self):
         self.symbolTableList.pop()
+
+    def newLabel(self):
+        self.labelCount += 1
+        return f"l{self.labelCount}"

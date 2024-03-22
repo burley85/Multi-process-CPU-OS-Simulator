@@ -42,7 +42,7 @@ class Comparison(ASTNode):
         
         codeMap = {
             TokenType.EQUALS:
-                "rax - rbx\n\
+                f"rax - rbx\n\
                 jnz l1\n\
                 rax = 1\n\
                 jmp l2\n\
@@ -50,12 +50,12 @@ class Comparison(ASTNode):
                 rax = 0\n\
                 l2:\n",
             TokenType.NOT_EQUALS:
-                "rax - rbx\n\
-                jz l\n\
+                f"rax - rbx\n\
+                jz l1\n\
                 rax = 1\n\
-                l:\n",
+                l1:\n",
             TokenType.LESS:
-                "rax - rbx\n\
+                f"rax - rbx\n\
                 jns l1\n\
                 rax = 1\n\
                 jmp l2\n\
@@ -63,7 +63,7 @@ class Comparison(ASTNode):
                 rax = 0\n\
                 l2:\n",
             TokenType.GREATER:
-                "rax - rbx\n\
+                f"rax - rbx\n\
                 js l1\n\
                 jz l1\n\
                 rax = 1\n\
@@ -72,7 +72,7 @@ class Comparison(ASTNode):
                 rax = 0\n\
                 l2:\n",
             TokenType.LESS_EQUALS:
-                "rax - rbx\n\
+                f"rax - rbx\n\
                 js l1\n\
                 jz l1\n\
                 rax = 0\n\
@@ -81,7 +81,7 @@ class Comparison(ASTNode):
                 rax = 1\n\
                 l2:\n",
             TokenType.GREATER_EQUALS:
-                "rax - rbx\n\
+                f"rax - rbx\n\
                 jns l1\n\
                 rax = 0\n\
                 jmp l2\n\
@@ -89,14 +89,17 @@ class Comparison(ASTNode):
                 rax = 1\n\
                 l2:\n",
             TokenType.AND:
-                "rax * rbx\n\
-                jz l\n\
+                f"rax * rbx\n\
+                jz l1\n\
                 rax = 1\n\
-                l:\n",
+                l1:\n",
             TokenType.OR:
-                "rax + rbx\n\
-                jz l\n\
+                f"rax + rbx\n\
+                jz l1\n\
                 rax = 1\n\
-                l:\n"
+                l1:\n"
         }
-        print(codeMap[self.operator], file = file)
+        code = codeMap[self.operator]
+        if "l1" in code: code = code.replace("l1", compiler.newLabel())
+        if "l2" in code: code = code.replace("l2", compiler.newLabel())
+        print(code, file = file)
