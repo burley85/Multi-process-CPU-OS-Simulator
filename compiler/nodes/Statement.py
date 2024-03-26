@@ -7,7 +7,7 @@ from abc import abstractmethod
 class Statement(ASTNode):    
     @staticmethod
     def parse(compiler : Compiler, stackOffset):
-        #import IfStatement as IfStatement
+        import nodes.IfStatement as IfStatement
         #import WhileStatement as WhileStatement
         #import ForStatement as ForStatement
         import nodes.ReturnStatement as ReturnStatement
@@ -16,7 +16,7 @@ class Statement(ASTNode):
         import nodes.EmptyStatement as EmptyStatement
         if compiler.currentToken().type != TokenType.SEMICOLON:
             map = {
-               # TokenType.IF : IfStatement.IfStatement,
+                TokenType.IF : IfStatement.IfStatement,
                 #TokenType.WHILE : WhileStatement.WhileStatement,
                 #TokenType.FOR : ForStatement.ForStatement,
                 TokenType.RETURN : ReturnStatement.ReturnStatement,
