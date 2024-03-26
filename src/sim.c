@@ -192,13 +192,18 @@ void encode_file(FILE* fp, sim* sim, unsigned long long start_address){
 
         //Check if the line is a label (ends with a colon)
         if(instruction[instruction_length - 1] == ':'){
-            //Make sure label fits the following regex: [A-Za-z_]+:
+            //Make sure label fits the following regex: [A-Za-z_][A-Za-z1-9_]+:
             if(instruction_length == 1){
                 printf("ERROR: Label cannot be empty\n");
                 exit(1);
             }
-            for(int i = 0; i < instruction_length - 1; i++){
-                if((instruction[i] < 'A' || instruction[i] > 'Z') && (instruction[i] < 'a' || instruction[i] > 'z') && instruction[i] != '_'){
+            if((instruction[0] < 'A' || instruction[0] > 'Z') && (instruction[0] < 'a' || instruction[0] > 'z') && instruction[0]!= '_'){
+                printf("ERROR: Label '%s' starts with invalid character\n", instruction);
+                exit(1);
+            }
+
+            for(int i = 1; i < instruction_length - 1; i++){
+                if((instruction[i] < 'A' || instruction[i] > 'Z') && (instruction[i] < 'a' || instruction[i] > 'z') && (instruction[i] < '1' || instruction[i] > '9') && instruction[i] != '_'){
                     printf("ERROR: Label '%s' contains invalid characters\n", instruction);
                     exit(1);
                 }
