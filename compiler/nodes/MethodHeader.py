@@ -34,4 +34,5 @@ class MethodHeader(ASTNode):
         print(")", file = file, end = "")
 
     def compile(self, compiler, file):
-        pass
+        print(f"_{self.identifier}:\n", file=file, end = "")
+        compiler.addDeclaration(self)

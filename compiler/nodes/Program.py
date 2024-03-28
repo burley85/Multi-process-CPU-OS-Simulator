@@ -21,6 +21,7 @@ class Program(ASTNode):
             method.print(file, indent)
 
     def compile(self, compiler, file):
+        print("jmp _main\n", file=file, end = "")
         for method in self.methods:
             compiler.currentMethodIdentifier = method.identifier
             method.compile(compiler, file)

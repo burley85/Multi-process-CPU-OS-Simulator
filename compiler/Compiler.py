@@ -5,7 +5,7 @@ class Compiler:
         self.tokenizer = Tokenizer(source)
         import nodes.Program
         self.program = nodes.Program.Program()
-        self.symbolTableList = [] #List of Dictionarys containing id : Declaration pairs
+        self.symbolTableList = [{}] #List of Dictionarys containing id : Declaration pairs
         self.currentMethodIdentifier = ""
         self.labelCount = 0
     
@@ -49,6 +49,8 @@ class Compiler:
         raise Exception(message)
     
     def addDeclaration(self, declaration):
+        if declaration.identifier in self.symbolTableList[-1]:
+            self.genericError(f"Redeclaration of '{declaration.identifier}'")
         self.symbolTableList[-1][declaration.identifier] = declaration
 
     def findDeclaration(self, identifier):
@@ -57,7 +59,6 @@ class Compiler:
             assert isinstance(symbolTable, dict)
             if identifier in symbolTable: return symbolTable[identifier]
         self.genericError(f"Identifier {identifier} is undefined")
-
 
     def enterBlock(self):
         self.symbolTableList.append({})
