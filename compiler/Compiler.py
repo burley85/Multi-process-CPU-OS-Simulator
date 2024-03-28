@@ -3,6 +3,8 @@ from Tokenizer import Tokenizer, Token, TokenType
 class Compiler:
     def __init__(self, source):
         self.tokenizer = Tokenizer(source)
+        import nodes.Program
+        self.program = nodes.Program.Program()
         self.symbolTableList = [] #List of Dictionarys containing id : Declaration pairs
         self.currentMethodIdentifier = ""
         self.labelCount = 0
@@ -66,3 +68,7 @@ class Compiler:
     def newLabel(self):
         self.labelCount += 1
         return f"l{self.labelCount}"
+    
+    def compile(self, file):
+        self.program.parse(self)
+        return self.program.compile(self, file)
