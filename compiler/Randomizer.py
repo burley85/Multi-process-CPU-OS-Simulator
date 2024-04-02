@@ -17,6 +17,20 @@ def geometricDistribution(p: float):
         result += 1
     return result
 
+def randomInteger():
+    maxInt = 2**64 - 1
+    minInt = 0
+    return random.randint(minInt, maxInt)
+
+def randomChar():
+    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    return random.choice(chars)
+
+def randomString():
+    strLen = geometricDistribution(.001)
+    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    return "".join(random.choices(chars, k=strLen))
+
 class RandomizerContext:
     def __init__(self):
         self.ID = [[]] #ID[0] is a list of functions, each list after that is a layer of nested scope
@@ -52,7 +66,6 @@ class RandomizerContext:
             if s in scope:
                 return self.uniqueID()
         return s
-
 
     def enterScope(self):
         self.ID.append([])
