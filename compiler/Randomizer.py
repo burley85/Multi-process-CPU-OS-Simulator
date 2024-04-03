@@ -36,7 +36,7 @@ class RandomizerContext:
         self.ID = [[]] #ID[0] is a list of functions, each list after that is a layer of nested scope
     def newDecl(self):
         id = ""
-        redeclarationErrorProbability = .01
+        redeclarationErrorProbability = .0001
         validDuplicateProbability = .05
         if bernoulliDistribution(redeclarationErrorProbability) and len(self.ID[-1]) > 0:
             #Pick random ID that has already been declared in the current scope
@@ -49,7 +49,7 @@ class RandomizerContext:
                 id = random.choice(randomScope)
             else:
                 id = self.uniqueID()
-            self.ID.append(id)
+            self.ID.append(innermostScope)
         else:
             #Pick a unique ID
             id = self.uniqueID()
@@ -72,8 +72,21 @@ class RandomizerContext:
     def exitScope(self):
         self.ID.pop()
     def randomVar(self):
-        random.choice(random.choice(self.ID))
+        if len(self.ID) <= 1: return None
+        funcs = self.ID.pop(0)
+        RandomScope = random.choice(self.ID)
+        var = None
+        #First try a random variable from a random scope
+        #If that's not possible search each scope in reverse order
+        if len(RandomScope) > 0:
+            var = random.choice(RandomScope)
+        else:
+            for scope in reversed(self.ID):
+                if len(scope) > 0:
+                    var = random.choice(scope)
+        self.ID.insert(0, funcs)
+        return var
     def randomFunc(self):
-        random.choice(self.ID[0])
+        return random.choice(self.ID[0])
 
 
