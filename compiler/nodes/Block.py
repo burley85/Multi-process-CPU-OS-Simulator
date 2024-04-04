@@ -41,10 +41,10 @@ class Block(Statement):
         print(indent + "{\n", file = file, end = "")
         for declaration in self.declarations:
             declaration.print(file, indent + "  ")
-            print(";\n", end = "")
+            print(";\n", file = file, end = "")
         for statement in self.statements:
             statement.print(file, indent + "  ")
-            print("\n", end = "")
+            print("\n", file = file, end = "")
         print(indent + "}\n", file = file, end = "")
 
     def compile(self, compiler : Compiler, file):

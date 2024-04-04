@@ -27,7 +27,7 @@ class Statement(ASTNode):
                 statement.parse(compiler, stackOffset)
             else: statement.parse(compiler)
 
-        else: statement = EmptyStatement.EmptyStatement()
+        else: statement = EmptyStatement.EmptyStatement().parse(compiler, stackOffset)
         return statement
 
     @property

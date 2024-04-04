@@ -1,6 +1,7 @@
 from Compiler import Compiler, TokenType
 from nodes.Type import Type
 from nodes.ASTNode import ASTNode
+import Randomizer
 
 '''<return_type> ::= "void" | <type>'''
 class ReturnType(ASTNode):
@@ -22,3 +23,14 @@ class ReturnType(ASTNode):
 
     def compile(self, compiler: Compiler, file):
         pass
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        weights = {
+            Type.createRandom(context) : 1,
+            None : 1
+        }
+        obj.type = Randomizer.weightedChoice(weights)
+        return obj
+        

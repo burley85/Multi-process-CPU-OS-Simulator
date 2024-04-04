@@ -50,12 +50,12 @@ class Type(ASTNode):
         return self
     
     def print(self, file, indent = ""):
-        print(indent, end = "")
+        print(indent, file = file, end = "")
         if(self.unsigned): print("unsigned ", file = file, end = "")
         if(self.type == None): print("void ", file = file, end = "")
-        elif(self.type == PrimitiveType.LONG_LONG): print("long long ", end = "")
-        else: print(self.type.name.lower() + " ", end = "")
-        print("*" * self.pointerDepth, end = "")
+        elif(self.type == PrimitiveType.LONG_LONG): print("long long ", file = file, end = "")
+        else: print(self.type.name.lower() + " ", file = file, end = "")
+        print("*" * self.pointerDepth, file = file, end = "")
 
     def compile(self, compiler: Compiler, file):
         pass

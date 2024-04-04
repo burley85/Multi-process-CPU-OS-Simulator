@@ -26,6 +26,8 @@ class Method(ASTNode):
         self.block.print(file, indent)
 
     def compile(self, compiler : Compiler, file):
+        compiler.addDeclaration(self.method_header)
+        compiler.enterBlock()
         self.method_header.compile(compiler, file)
         #Setup the stack
         print("push rbp", file = file)
@@ -33,6 +35,7 @@ class Method(ASTNode):
         print("rsp - " + str(self.stackSize), file = file)
 
         self.block.compile(compiler, file)
+        compiler.leaveBlock()
 
     @classmethod
     def createRandom(cls, context):

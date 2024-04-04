@@ -28,7 +28,6 @@ class Declaration(ASTNode):
         self.type.print(file, indent)
         print(self.identifier, file = file, end = "")
         if self.arraySize > 0: print(f"[{self.arraySize}]", file = file, end = "")
-        print(" @ " + str(self.stackOffset), file = file, end = "")
 
     def compile(self, compiler : Compiler, file):
         compiler.addDeclaration(self)

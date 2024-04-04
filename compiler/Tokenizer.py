@@ -112,7 +112,7 @@ class Tokenizer:
             self.token = Token(TokenType.EOF)
             return self.token
 
-        if not s.isalnum():
+        if not s.isalnum() and s != "_":
             #Check if it's a two character token
             originalPosition = self.source.tell()
             s += self.source.read(1)
@@ -122,6 +122,7 @@ class Tokenizer:
             else:
                 s = s[0]
                 self.token = Token(oneCharMap.get(s, TokenType.UNKNOWN))
+                if self.token.type == TokenType.UNKNOWN: print(f"WARNING: Unrecognized character '{s}'")
                 self.source.seek(originalPosition)
 
         elif s.isalpha() or s == "_":

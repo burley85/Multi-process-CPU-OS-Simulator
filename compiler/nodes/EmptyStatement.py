@@ -8,8 +8,16 @@ class EmptyStatement(Statement):
     
     def __init__(self):
         pass
+    
     def parse(self, compiler : Compiler, _):
-        pass
+        compiler.expect(TokenType.SEMICOLON)
+        return self
+
+    def print(self, file, indent = ""):
+        print(indent + ";\n", file = file, end = "")
+
+    def compile(self, compiler: Compiler, file):
+        return
 
     @classmethod
     def createRandom(cls, context):

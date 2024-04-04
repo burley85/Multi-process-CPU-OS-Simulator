@@ -23,7 +23,7 @@ class ReturnStatement(Statement):
         if(self.expression != None): 
             print(" ", file = file, end = "")
             self.expression.print(file, indent)
-        print(";", end = "")
+        print(";", file = file, end = "")
 
     def compile(self, compiler : Compiler, file):
         if self.expression != None: 

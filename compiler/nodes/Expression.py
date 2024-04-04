@@ -58,9 +58,9 @@ class Expression(ASTNode):
         elif self.child.type == TokenType.IDENTIFIER:
             #Load value into rax
             decl = compiler.findDeclaration(self.child.value)
-            print(f"rbp - {decl.stackOffset}", file = file)
+            print(f"rbp {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
             print("rax = (rbp)", file = file)
-            print(f"rbp + {decl.stackOffset}", file = file)
+            print(f"rbp {'+' if decl.stackOffset > 0 else '-'} {abs(decl.stackOffset)}", file = file)
 
     @classmethod
     def createRandom(cls, context):
