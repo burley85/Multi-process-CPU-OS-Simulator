@@ -3,6 +3,7 @@ from Compiler import Compiler, Token, TokenType
 from nodes.Call import Call
 from nodes.Comparison import Comparison
 from nodes.ASTNode import ASTNode
+import Randomizer
 
 '''<expression> ::= <id_or_literal> | "*" <identifier> | "&" <identifier> | "!" <id_or_literal> |
                     <comparison> | <call>'''
@@ -61,3 +62,49 @@ class Expression(ASTNode):
             print("rax = (rbp)", file = file)
             print(f"rbp + {decl.stackOffset}", file = file)
 
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        #Pick call, comparison, *, &, !, or id/literal
+        weights = {
+            Call: 0,            #NOT YET IMPLEMENTED
+            Comparison: 0,      #NOT YET IMPLEMENTED
+            TokenType.DEREF: 0, #NOT YET IMPLEMENTED
+            TokenType.ADDR: 0,  #NOT YET IMPLEMENTED
+            TokenType.NOT: 0,   #NOT YET IMPLEMENTED
+            TokenType.IDENTIFIER: 1,
+            TokenType.NUMBER: 1,
+            TokenType.CHAR: 0,  #NOT YET IMPLEMENTED
+            TokenType.STRING: 0 #NOT YET IMPLEMENTED
+        }
+        result = Randomizer.weightedChoice(weights)
+        #Set unaryOperator
+        if result in {TokenType.DEREF, TokenType.ADDR, TokenType.NOT}:
+            obj.unaryOperator = result
+
+        #Set child
+        if result in {Call, Comparison}:
+            obj.child = result().createRandom(context)
+
+        if result == TokenType.NOT:
+            weights.update({
+                Call : 0,
+                Comparison : 0,
+                TokenType.DEREF : 0,
+                TokenType.ADDR : 0,
+                TokenType.NOT : 0
+            })
+            result = Randomizer.weightedChoice(weights)
+
+        if result in {TokenType.IDENTIFIER, TokenType.ADDR, TokenType.DEREF}:
+            var = context.randomVar()
+            if var is None: return None
+            obj.child = Token(TokenType.IDENTIFIER, var)
+        elif result == TokenType.NUMBER:
+            obj.child = Token(TokenType.NUMBER, Randomizer.randomInteger())
+        elif result == TokenType.CHAR:
+            obj.child = Token(TokenType.CHAR, Randomizer.randomChar())
+        elif result == TokenType.STRING:
+            obj.child = Token(TokenType.STRING, Randomizer.randomString())
+
+        return obj

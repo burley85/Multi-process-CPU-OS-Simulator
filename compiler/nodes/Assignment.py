@@ -1,6 +1,7 @@
 from Compiler import Compiler, TokenType
 from nodes.Expression import Expression
 from nodes.ASTNode import ASTNode
+import Randomizer
 
 '''<assignment> ::= <l_value> <assign_op> <expression> | <l_value> "++" | <l_value> "--"
    <l_value> ::= <identifier> | "*" <identifier>'''
@@ -69,3 +70,29 @@ class Assignment(ASTNode):
         #Write to lvalue
         print("(rbp) = rbx", file = file)
         print(f"rbp + {decl.stackOffset}", file = file)
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        #Pick number of derefs
+        #while(random.randint(0, 1) == 1): obj.lValueRefDepth += 1 -- NOT YET IMPLEMENTED
+        obj.lValueRefDepth = 0
+        #Pick random l-value
+        obj.lValueID = context.randomVar()
+        if obj.lValueID == None: return None
+        #Pick random operator
+        obj.operator = Randomizer.weightedChoice({
+            TokenType.ASSIGN : 1,
+            TokenType.PLUS_ASSIGN : 1,
+            TokenType.MINUS_ASSIGN : 1,
+            TokenType.MULTIPLY_ASSIGN : 1,
+            TokenType.DIVIDE_ASSIGN : 1,
+            TokenType.MODULO_ASSIGN : 0, #NOT YET IMPLEMENTED
+            TokenType.INCREMENT : 1,
+            TokenType.DECREMENT : 1
+        })
+
+        #If operator is assignment, pick random expression
+        if obj.operator not in {TokenType.INCREMENT, TokenType.DECREMENT}:
+            obj.expression = Expression.createRandom(context)
+        return obj

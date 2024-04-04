@@ -36,3 +36,13 @@ class MethodHeader(ASTNode):
     def compile(self, compiler, file):
         print(f"_{self.identifier}:\n", file=file, end = "")
         compiler.addDeclaration(self)
+        
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        obj.returnType = ReturnType.createRandom(context)
+        obj.identifier = context.newDecl()
+        parameterCount = Randomizer.geometricDistribution(.5)
+        for i in range(parameterCount):
+            obj.parameterList.append(Declaration.createRandom(context))
+        return obj

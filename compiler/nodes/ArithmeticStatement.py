@@ -2,6 +2,7 @@ from Compiler import Compiler, TokenType
 from nodes.Assignment import Assignment
 from nodes.Expression import Expression
 from nodes.Statement import Statement
+import Randomizer
 
 '''<arithmetic_statement> ::= <assignment> ";" | <expression> ";"'''
 class ArithmeticStatement(Statement):
@@ -43,3 +44,14 @@ class ArithmeticStatement(Statement):
 
     def compile(self, compiler, file):
         self.child.compile(compiler, file)
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        weights = {
+            Assignment : 1,
+            Expression : 1
+        }
+        obj.child = Randomizer.weightedChoice(weights).createRandom(context)
+        if obj.child is None: return None
+        return obj

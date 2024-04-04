@@ -1,6 +1,7 @@
 from Compiler import Compiler, TokenType
 from nodes.Declaration import Declaration
 from nodes.Statement import Statement
+import Randomizer
 
 '''<block> ::= "{" <declaration_list> <statement_list> "}"
    <declaration_list> ::= "" | <declaration> ";" <declaration_list>
@@ -53,3 +54,18 @@ class Block(Statement):
         for statement in self.statements:
             statement.compile(compiler, file)
         compiler.leaveBlock()
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        context.enterScope()
+        numberOfDeclarations = Randomizer.geometricDistribution(.1)
+        numberOfStatements = Randomizer.geometricDistribution(.25)
+        for i in range(numberOfDeclarations):
+            obj.declarations.append(Declaration.createRandom(context))
+        for i in range(numberOfStatements):
+            stmt = Statement.createRandom(context)
+            if stmt is not None:
+                obj.statements.append(stmt)
+        context.exitScope()
+        return obj

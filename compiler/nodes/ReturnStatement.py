@@ -35,3 +35,10 @@ class ReturnStatement(Statement):
         
         if compiler.currentMethodIdentifier == "main": print("halt", file = file)
         else: print("ret", file = file)
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        obj.expression = Expression.createRandom(context)
+        if obj.expression is None: return None
+        return obj

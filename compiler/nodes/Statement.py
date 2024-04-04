@@ -1,7 +1,7 @@
 from Compiler import Compiler, TokenType
 from nodes.ASTNode import ASTNode
 from abc import abstractmethod
-
+import Randomizer
 '''<statement> ::= <if_statement> | <while_statement> | <for_statement> | <return_statement> |
                    <block> | <arithmetic_statement> | ";"'''
 class Statement(ASTNode):    
@@ -34,3 +34,22 @@ class Statement(ASTNode):
     @abstractmethod
     def stackSize(self) -> int:
         ...
+
+    @classmethod
+    def createRandom(cls, context):
+        from nodes.IfStatement import IfStatement
+        from nodes.WhileStatement import WhileStatement
+        #from nodes.ForStatement import ForStatement
+        from nodes.ReturnStatement import ReturnStatement
+        from nodes.ArithmeticStatement import ArithmeticStatement
+        from nodes.Block import Block
+        from nodes.EmptyStatement import EmptyStatement
+        weights = {
+            IfStatement : 0,    #NOT YET IMPLEMENTED
+            WhileStatement : 0, #NOT YET IMPLEMENTED
+            ReturnStatement : 1,
+            ArithmeticStatement : 1,
+            Block : .1,
+            EmptyStatement : 1,
+        }
+        return Randomizer.weightedChoice(weights).createRandom(context)

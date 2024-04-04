@@ -13,3 +13,9 @@ class ASTNode(ABC):
     @abstractmethod
     def compile(self, compiler : Compiler, file):
         ...
+
+    @classmethod
+    @abstractmethod
+    def createRandom(cls, context):
+        return cls()
+        ...

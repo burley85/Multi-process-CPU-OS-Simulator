@@ -1,6 +1,7 @@
 from Compiler import Compiler, TokenType
 from nodes.Type import Type
 from nodes.ASTNode import ASTNode
+import Randomizer
 
 '''<declaration> ::= <type> <identifier> | <type> <identifier> "[" <number> "]"'''
 class Declaration(ASTNode):
@@ -31,3 +32,17 @@ class Declaration(ASTNode):
 
     def compile(self, compiler : Compiler, file):
         compiler.addDeclaration(self)
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        obj.type = Type.createRandom(context)
+        obj.identifier = context.newDecl()
+        
+        #Decide if declaration is an array
+        probabilityOfArray = 0 #NOT YET IMPLEMENTED
+        if Randomizer.bernoulliDistribution(probabilityOfArray):
+            arraySizePValue = .1
+            obj.arraySize = Randomizer.geometricDistribution(arraySizePValue) + 1
+
+        return obj

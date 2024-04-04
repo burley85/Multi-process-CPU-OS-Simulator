@@ -1,6 +1,7 @@
 from enum import Enum
 from Compiler import Compiler, TokenType
 from nodes.ASTNode import ASTNode
+import Randomizer
 
 PrimitiveType = Enum("PrimitiveType", "CHAR, SHORT, INT, LONG, LONG_LONG")
 
@@ -58,3 +59,28 @@ class Type(ASTNode):
 
     def compile(self, compiler: Compiler, file):
         pass
+
+    @classmethod
+    def createRandom(cls, context):
+        obj  = cls()
+        #Chose unsigned
+        chanceOfUnsigned = .1
+        obj.unsigned = Randomizer.bernoulliDistribution(chanceOfUnsigned)
+        #Choose type
+        weights = {
+            PrimitiveType.CHAR: 0,  #NOT YET IMPLEMENTED
+            PrimitiveType.SHORT: 0, #NOT YET IMPLEMENTED
+            PrimitiveType.INT: 0,   #NOT YET IMPLEMENTED
+            PrimitiveType.LONG: 0,  #NOT YET IMPLEMENTED
+            PrimitiveType.LONG_LONG: 1,
+            None: 0                 #NOT YET IMPLEMENTED
+        }
+        obj.type = Randomizer.weightedChoice(weights)
+        
+        #Choose pointerDepth
+        chanceOfPointer = 0 #NOT YET IMPLEMENTED
+        if(obj.type is None): obj.pointerDepth = 1
+        if Randomizer.bernoulliDistribution(chanceOfPointer):
+            obj.pointerDepth += 1
+            obj.pointerDepth += Randomizer.geometricDistribution(.75)
+        return obj

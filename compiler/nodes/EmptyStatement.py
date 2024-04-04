@@ -10,3 +10,8 @@ class EmptyStatement(Statement):
         pass
     def parse(self, compiler : Compiler, _):
         pass
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        return obj

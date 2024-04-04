@@ -33,3 +33,10 @@ class Method(ASTNode):
         print("rsp - " + str(self.stackSize), file = file)
 
         self.block.compile(compiler, file)
+
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        obj.method_header = MethodHeader.createRandom(context)
+        obj.block = Block.createRandom(context)
+        return obj
