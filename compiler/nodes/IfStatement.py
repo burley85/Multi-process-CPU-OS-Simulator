@@ -7,7 +7,8 @@ from nodes.Statement import Statement
 class IfStatement(Statement):
     @property
     def stackSize(self):
-        return 0
+        if self.elseStatement is None: return self.statement.stackSize()
+        else: return max(self.elseStatement.stackSize(), self.statement.stackSize())
     
     def __str__(self):
         if self.elseStatement is None: return f"if({str(self.expression)}){self.statement}"

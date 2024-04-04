@@ -6,7 +6,7 @@ from nodes.Statement import Statement
 class WhileStatement(Statement):
     @property
     def stackSize(self):
-        return 0
+        return self.statement.stackSize()
     
     def __init__(self):
         self.expression = None
