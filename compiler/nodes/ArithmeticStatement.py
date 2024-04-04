@@ -13,6 +13,9 @@ class ArithmeticStatement(Statement):
     def __init__(self):
         self.child = None
 
+    def __str__(self):
+        return self.child.__str__() + ";"
+    
     def parse(self, compiler : Compiler, _):
         assignOp = [TokenType.ASSIGN, TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
                     TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN, TokenType.MODULO_ASSIGN,
@@ -37,10 +40,6 @@ class ArithmeticStatement(Statement):
                           TokenType.CHAR, TokenType.IDENTIFIER, TokenType.DEREF})
         compiler.expect(TokenType.SEMICOLON)
         return self
-    
-    def print(self, file, indent = ""):
-        self.child.print(file, indent)
-        print(";", file = file, end = "")
 
     def compile(self, compiler, file):
         self.child.compile(compiler, file)

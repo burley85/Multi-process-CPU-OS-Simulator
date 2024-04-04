@@ -11,19 +11,16 @@ class ReturnStatement(Statement):
     def __init__(self):
         self.expression = None
         
+    def __str__(self):
+        if self.expression is None: return "return;"
+        else: return f"return {self.expression};"
+
     def parse(self, compiler : Compiler, _):
         compiler.expect(TokenType.RETURN)
         if compiler.currentToken().type!= TokenType.SEMICOLON:
             self.expression = Expression().parse(compiler)
         compiler.expect(TokenType.SEMICOLON)
         return self #TODO: make sure expression matches method's return type
-
-    def print(self, file, indent = ""):
-        print(indent + "return", file = file, end = "")
-        if(self.expression != None): 
-            print(" ", file = file, end = "")
-            self.expression.print(file, indent)
-        print(";", file = file, end = "")
 
     def compile(self, compiler : Compiler, file):
         if self.expression != None: 

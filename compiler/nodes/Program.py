@@ -10,6 +10,12 @@ class Program(ASTNode):
     def __init__(self):
         self.methods = []
 
+    def __str__(self):
+        s = ""
+        for method in self.methods:
+            s += str(method) + "\n"
+        return s
+    
     def parse(self, compiler : Compiler):
         while compiler.currentToken().type != TokenType.EOF:
             self.methods.append(Method().parse(compiler))
@@ -17,10 +23,6 @@ class Program(ASTNode):
         for method in self.methods:
             if method.name() == "main": return self
         compiler.genericError('"main" is not defined')
-    
-    def print(self, file = stdout, indent = ""):
-        for method in self.methods:
-            method.print(file, indent)
 
     def compile(self, compiler, file):
         print("jmp _main\n", file=file, end = "")

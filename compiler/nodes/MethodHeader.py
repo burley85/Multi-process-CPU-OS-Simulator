@@ -12,6 +12,16 @@ class MethodHeader(ASTNode):
         self.identifier = ""
         self.parameterList = []
 
+    def __str__(self):
+        s = f"{self.returnType} {self.identifier}("
+        
+        for parameter in self.parameterList:
+            s += str(parameter)
+            if parameter != self.parameterList[-1]: 
+                s += ", "
+        s += ")"
+        return s
+
     def parse(self, compiler : Compiler):
         self.returnType = ReturnType().parse(compiler)
         self.identifier = compiler.expect(TokenType.IDENTIFIER).value
@@ -25,15 +35,6 @@ class MethodHeader(ASTNode):
 
         compiler.expect(TokenType.RPAREN)
         return self
-    
-    def print(self, file, indent = ""):
-        self.returnType.print(file, indent)
-        print(self.identifier + "(", file=file, end = "")
-        for parameter in self.parameterList:
-            parameter.print(file, "")
-            if parameter != self.parameterList[-1]: 
-                print(", ", file = file, end = "")
-        print(")", file = file, end = "")
 
     def compile(self, compiler : Compiler, file):
         for parameter in self.parameterList:

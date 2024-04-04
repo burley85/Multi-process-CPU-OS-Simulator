@@ -17,6 +17,16 @@ class Block(Statement):
         self.stackOffset = 0
         self._stackSize = 0
 
+    def __str__(self):
+        s = "{\n"
+        for declaration in self.declarations:
+            s += str(declaration) + ";\n"
+        for statement in self.statements:
+            s += str(statement) + "\n"
+        s += "}"
+        s = s.replace("\n", "\n\t", s.count("\n") - 1)
+        return s
+
     def parse(self, compiler : Compiler, stackOffset):
         self.stackOffset = stackOffset
         compiler.expect(TokenType.LBRACE)
@@ -36,16 +46,6 @@ class Block(Statement):
         
         compiler.expect(TokenType.RBRACE)
         return self
-    
-    def print(self, file, indent = ""):
-        print(indent + "{\n", file = file, end = "")
-        for declaration in self.declarations:
-            declaration.print(file, indent + "  ")
-            print(";\n", file = file, end = "")
-        for statement in self.statements:
-            statement.print(file, indent + "  ")
-            print("\n", file = file, end = "")
-        print(indent + "}\n", file = file, end = "")
 
     def compile(self, compiler : Compiler, file):
         compiler.enterBlock()

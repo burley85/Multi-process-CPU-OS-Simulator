@@ -9,6 +9,10 @@ class IfStatement(Statement):
     def stackSize(self):
         return 0
     
+    def __str__(self):
+        if self.elseStatement is None: return f"if({str(self.expression)}){self.statement}"
+        else: return f"if({str(self.expression)}){self.statement}\nelse {self.elseStatement}"
+        
     def __init__(self):
         self.expression = None
         self.statement = None
@@ -24,15 +28,6 @@ class IfStatement(Statement):
             compiler.expect(TokenType.ELSE)
             self.elseStatement = Statement.parse(compiler, 0)
         return self
-    
-    def print(self, file, indent = ""):
-        print(indent + "if (", file = file, end = "")
-        self.expression.print(file, indent)
-        print(") ", file = file, end = "")
-        self.statement.print(file, indent)
-        if self.elseStatement is not None:
-            print("else ", file = file, end = "")
-            self.elseStatement.print(file, indent)
 
     def compile(self, compiler : Compiler, file):
         self.expression.compile(compiler, file)

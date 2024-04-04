@@ -12,6 +12,13 @@ class Expression(ASTNode):
         self.child : Token | Comparison | Call = None
         self.unaryOperator : TokenType = None
 
+    def __str__(self):
+        if isinstance(self.child, Call) or isinstance(self.child, Comparison):
+            return str(self.child)
+        else:
+            opMap = {TokenType.DEREF: "*", TokenType.ADDR: "&", TokenType.NOT: "!"}
+            return opMap.get(self.unaryOperator, "") + str(self.child)
+
     def parse(self, compiler : Compiler):
         idOrLiteral = [TokenType.IDENTIFIER, TokenType.NUMBER, TokenType.CHAR, TokenType.STRING]
         comparisonOperator = [TokenType.EQUALS, TokenType.NOT_EQUALS, TokenType.LESS,
@@ -38,13 +45,6 @@ class Expression(ASTNode):
             self.child = Comparison().parse(compiler)
         else: self.child = compiler.expect(idOrLiteral)
         return self
-    
-    def print(self, file, indent = ""):
-        if isinstance(self.child, Call) or isinstance(self.child, Comparison):
-            self.child.print(file, "")
-        else:
-            print({TokenType.DEREF: "*", TokenType.ADDR: "&", TokenType.NOT: "!"}
-                  .get(self.unaryOperator, "") + str(self.child), file = file, end = "")
             
     def compile(self, compiler : Compiler, file):
         if isinstance(self.child, Call) or isinstance(self.child, Comparison):

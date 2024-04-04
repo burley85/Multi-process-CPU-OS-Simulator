@@ -11,6 +11,11 @@ class Method(ASTNode):
         self.stackSize = 0
         self.identifier = ""
         
+    def __str__(self):
+        s = str(self.method_header) + str(self.block)
+        s = s.replace("\n", "\t\n")
+        return s
+    
     def parse(self, compiler : Compiler):
         self.method_header = MethodHeader().parse(compiler)
         self.identifier = self.method_header.identifier
@@ -20,10 +25,6 @@ class Method(ASTNode):
     
     def name(self):
         return self.method_header.identifier
-
-    def print(self, file, indent = ""):
-        self.method_header.print(file, indent)
-        self.block.print(file, indent)
 
     def compile(self, compiler : Compiler, file):
         compiler.addDeclaration(self.method_header)

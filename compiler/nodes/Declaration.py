@@ -12,6 +12,12 @@ class Declaration(ASTNode):
         self.size = 0
         self.stackOffset = 0
 
+    def __str__(self):
+        if self.arraySize == 0:
+            return f"{self.type} {self.identifier}"
+        else:
+            return f"{self.type} {self.identifier}[{self.arraySize}]"
+
     def parse(self, compiler : Compiler, stackOffset):
         self.type = Type().parse(compiler)
         self.stackOffset = stackOffset
@@ -23,11 +29,6 @@ class Declaration(ASTNode):
             compiler.expect(TokenType.RBRACKET)
         self.size = self.type.size if self.arraySize == 0 else self.type.size * self.arraySize
         return self
-    
-    def print(self, file, indent = ""):
-        self.type.print(file, indent)
-        print(self.identifier, file = file, end = "")
-        if self.arraySize > 0: print(f"[{self.arraySize}]", file = file, end = "")
 
     def compile(self, compiler : Compiler, file):
         compiler.addDeclaration(self)

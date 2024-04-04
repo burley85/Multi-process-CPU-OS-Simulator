@@ -12,6 +12,22 @@ class Assignment(ASTNode):
         self.operator = None
         self.expression = None
         
+    def __str__(self):
+        opMap = {
+            TokenType.ASSIGN: "=",
+            TokenType.PLUS_ASSIGN: "+=",
+            TokenType.MINUS_ASSIGN: "-=",
+            TokenType.MULTIPLY_ASSIGN: "*=",
+            TokenType.DIVIDE_ASSIGN: "/=",
+            TokenType.MODULO_ASSIGN: "%=",
+            TokenType.INCREMENT: "++",
+            TokenType.DECREMENT: "--"
+        }
+        if self.expression != None:
+            return f'{"*" * self.lValueRefDepth}{self.lValueID} {opMap[self.operator]} {self.expression}'
+        else:
+            return f'{"*" * self.lValueRefDepth}{self.lValueID}{opMap[self.operator]}'
+        
     def parse(self, compiler : Compiler):
         assignOp = [TokenType.ASSIGN, TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
             TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN, TokenType.MODULO_ASSIGN]
@@ -23,23 +39,6 @@ class Assignment(ASTNode):
         if self.operator in assignOp:
             self.expression = Expression().parse(compiler)
         return self
-    
-    def print(self, file, indent = ""):
-        opMap = {
-            TokenType.ASSIGN: "=",
-            TokenType.PLUS_ASSIGN: "+=",
-            TokenType.MINUS_ASSIGN: "-=",
-            TokenType.MULTIPLY_ASSIGN: "*=",
-            TokenType.DIVIDE_ASSIGN: "/=",
-            TokenType.MODULO_ASSIGN: "%=",
-            TokenType.INCREMENT: "++",
-            TokenType.DECREMENT: "--"
-        }
-        print(f'{indent}{"*" * self.lValueRefDepth}{self.lValueID} {opMap[self.operator]}',
-              file = file, end = "")
-        if(self.expression != None): 
-            print(" ", file = file, end = "")
-            self.expression.print(file, "")
 
     def compile(self, compiler, file):
         opMap = {

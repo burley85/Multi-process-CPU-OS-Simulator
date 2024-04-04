@@ -3,11 +3,11 @@ import Compiler
 
 class ASTNode(ABC):
     @abstractmethod
-    def parse(self, compiler : Compiler):
+    def __str__(self):
         ...
-
+        
     @abstractmethod
-    def print(self, file, indent = ""):
+    def parse(self, compiler : Compiler):
         ...
     
     @abstractmethod

@@ -12,6 +12,9 @@ class WhileStatement(Statement):
         self.expression = None
         self.statement = None
 
+    def __str__(self):
+        return f"while({str(self.expression)}){str(self.statement)}"
+    
     def parse(self, compiler : Compiler, _):
         compiler.expect(TokenType.WHILE)
         compiler.expect(TokenType.LPAREN)
@@ -19,12 +22,6 @@ class WhileStatement(Statement):
         compiler.expect(TokenType.RPAREN)
         self.statement = Statement.parse(compiler, 0)
         return self
-    
-    def print(self, file, indent = ""):
-        print(indent + "while (", file = file, end = "")
-        self.expression.print(file, indent)
-        print(") ", file = file, end = "")
-        self.statement.print(file, indent)
 
     def compile(self, compiler : Compiler, file):
         conditionStartLabel = compiler.newLabel()

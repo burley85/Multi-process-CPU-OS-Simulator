@@ -15,6 +15,16 @@ class Type(ASTNode):
         self.pointerDepth = 0
         self.size = 0
         
+    def __str__(self):
+        s = ""
+        if self.type is None: s += "void"
+        else:
+            if self.unsigned: s += "unsigned "
+            if self.type == PrimitiveType.LONG_LONG: s += "long long"
+            else: s += self.type.name.lower()
+        s += "*" * self.pointerDepth
+        return s
+
     def parse(self, compiler : Compiler):
         if(compiler.currentToken().type == TokenType.UNSIGNED):
             compiler.nextToken()
@@ -48,14 +58,6 @@ class Type(ASTNode):
         }.get(self.type)
 
         return self
-    
-    def print(self, file, indent = ""):
-        print(indent, file = file, end = "")
-        if(self.unsigned): print("unsigned ", file = file, end = "")
-        if(self.type == None): print("void ", file = file, end = "")
-        elif(self.type == PrimitiveType.LONG_LONG): print("long long ", file = file, end = "")
-        else: print(self.type.name.lower() + " ", file = file, end = "")
-        print("*" * self.pointerDepth, file = file, end = "")
 
     def compile(self, compiler: Compiler, file):
         pass

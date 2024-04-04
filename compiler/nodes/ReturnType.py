@@ -8,6 +8,10 @@ class ReturnType(ASTNode):
     def __init__(self):
         self.type = None
     
+    def __str__(self):
+        if self.type is None: return "void"
+        else: return str(self.type)
+
     def parse(self, compiler : Compiler):
         current = compiler.currentToken()
         peek = compiler.peekToken()
@@ -16,10 +20,6 @@ class ReturnType(ASTNode):
         else:
             self.type = Type().parse(compiler)
         return self
-
-    def print(self, file, indent = ""):
-        if(self.type == None): print(indent + "void ", file = file, end = "")
-        else: self.type.print(file, indent)
 
     def compile(self, compiler: Compiler, file):
         pass
