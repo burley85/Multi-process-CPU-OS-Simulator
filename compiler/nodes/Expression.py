@@ -46,9 +46,9 @@ class Expression(ASTNode):
         else: self.child = compiler.expect(idOrLiteral)
         return self
             
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
         if isinstance(self.child, Call) or isinstance(self.child, Comparison):
-           self.child.compile(compiler, file)
+           self.child.compile(compiler, file, withComments)
         elif self.unaryOperator != None:
             compiler.genericError(f'Expression type not yet implemented: "{self.unaryOperator}" <{self.child.type}>')
         elif self.child.type == TokenType.NUMBER: 

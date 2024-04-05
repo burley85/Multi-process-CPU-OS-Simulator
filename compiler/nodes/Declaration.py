@@ -30,7 +30,8 @@ class Declaration(ASTNode):
         self.size = self.type.size if self.arraySize == 0 else self.type.size * self.arraySize
         return self
 
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
+        if withComments: print(f";{self}", file = file)
         compiler.addDeclaration(self)
 
     @classmethod

@@ -41,8 +41,9 @@ class ArithmeticStatement(Statement):
         compiler.expect(TokenType.SEMICOLON)
         return self
 
-    def compile(self, compiler, file):
-        self.child.compile(compiler, file)
+    def compile(self, compiler : Compiler, file, withComments = False):
+        if withComments: print(f";{self}", file = file)
+        self.child.compile(compiler, file, withComments)
 
     @classmethod
     def createRandom(cls, context):

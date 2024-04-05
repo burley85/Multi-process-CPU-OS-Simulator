@@ -28,7 +28,7 @@ class Call(ASTNode):
         compiler.expect(TokenType.RPAREN)
         return self
 
-    def compile(self, compiler: Compiler, file):
+    def compile(self, compiler: Compiler, file, withComments):
         #Check number of args
         methodHeader = compiler.findDeclaration(self.identifier)
         if not hasattr(methodHeader, "parameterList"):

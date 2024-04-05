@@ -22,9 +22,10 @@ class ReturnStatement(Statement):
         compiler.expect(TokenType.SEMICOLON)
         return self #TODO: make sure expression matches method's return type
 
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
+        if withComments: print(f";{self}", file = file)
         if self.expression != None: 
-            self.expression.compile(compiler, file)
+            self.expression.compile(compiler, file, withComments)
         
         #Tear down the stack
         print("rsp = rbp", file = file)

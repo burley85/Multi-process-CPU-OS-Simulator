@@ -24,16 +24,18 @@ class WhileStatement(Statement):
         self.statement = Statement.parse(compiler, 0)
         return self
 
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
+        if withComments: print(f";while({self.expression}){'{'}", file = file)
         conditionStartLabel = compiler.newLabel()
         statementStartLabel = compiler.newLabel()
         print(f"jmp {conditionStartLabel}", file = file)
         print(f"{statementStartLabel}:", file = file)
-        self.statement.compile(compiler, file)
+        self.statement.compile(compiler, file, withComments)
         print(f"{conditionStartLabel}:", file = file)
-        self.expression.compile(compiler, file)
+        self.expression.compile(compiler, file, False)
         print("rax = rax", file = file)
         print(f"jnz {statementStartLabel}", file = file)
+        if withComments: print("}", file = file)
 
     @classmethod
     def createRandom(cls, context):

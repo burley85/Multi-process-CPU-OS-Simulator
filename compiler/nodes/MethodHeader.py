@@ -36,10 +36,10 @@ class MethodHeader(ASTNode):
         compiler.expect(TokenType.RPAREN)
         return self
 
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
+        if withComments: print(f";{self}", file = file)
         for parameter in self.parameterList:
             compiler.addDeclaration(parameter)
-        print(compiler.symbolTableList.__repr__())
         print(f"_{self.identifier}:\n", file=file, end = "")
         
     @classmethod

@@ -31,7 +31,7 @@ class Comparison(ASTNode):
         self.op2 = compiler.expect(idOrLiteral)
         return self
 
-    def compile(self, compiler: Compiler, file):
+    def compile(self, compiler: Compiler, file, withComments):
         #Load op1 into rax
         if(self.op1.type == TokenType.IDENTIFIER):
             decl = compiler.findDeclaration(self.op1.value)

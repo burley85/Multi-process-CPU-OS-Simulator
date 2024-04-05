@@ -40,7 +40,7 @@ class Assignment(ASTNode):
             self.expression = Expression().parse(compiler)
         return self
 
-    def compile(self, compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
         opMap = {
             TokenType.ASSIGN: "=",
             TokenType.PLUS_ASSIGN: "+",
@@ -55,7 +55,7 @@ class Assignment(ASTNode):
         if(self.operator == TokenType.MODULO_ASSIGN): compiler.genericError(f"Modulo not yet implemented")
 
         if(self.expression != None):
-            self.expression.compile(compiler, file) #Stores result of expression in rax
+            self.expression.compile(compiler, file, withComments) #Stores result of expression in rax
         
         #Load lvalue
         decl = compiler.findDeclaration(self.lValueID)

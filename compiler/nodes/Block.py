@@ -47,12 +47,16 @@ class Block(Statement):
         compiler.expect(TokenType.RBRACE)
         return self
 
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
         compiler.enterBlock()
         for declaration in self.declarations:
-            declaration.compile(compiler, file)
+            declaration.compile(compiler, file, withComments)
         for statement in self.statements:
-            statement.compile(compiler, file)
+            if isinstance(statement, Block) and withComments:
+                print(";{", file = file)
+            statement.compile(compiler, file, withComments)
+            if isinstance(statement, Block) and withComments:
+                print(";}", file = file)
         compiler.leaveBlock()
 
     @classmethod

@@ -21,7 +21,7 @@ class ReturnType(ASTNode):
             self.type = Type().parse(compiler)
         return self
 
-    def compile(self, compiler: Compiler, file):
+    def compile(self, compiler: Compiler, file, withComments):
         pass
 
     @classmethod

@@ -26,16 +26,18 @@ class Method(ASTNode):
     def name(self):
         return self.method_header.identifier
 
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
         compiler.addDeclaration(self.method_header)
         compiler.enterBlock()
-        self.method_header.compile(compiler, file)
+        self.method_header.compile(compiler, file, withComments)
+        if withComments: print(";{", file = file)
         #Setup the stack
         print("push rbp", file = file)
         print("rbp = rsp", file = file)
         print("rsp - " + str(self.stackSize), file = file)
 
-        self.block.compile(compiler, file)
+        self.block.compile(compiler, file, withComments)
+        if withComments: print(";}", file = file)
         compiler.leaveBlock()
 
     @classmethod

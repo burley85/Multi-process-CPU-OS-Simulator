@@ -24,11 +24,11 @@ class Program(ASTNode):
             if method.name() == "main": return self
         compiler.genericError('"main" is not defined')
 
-    def compile(self, compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
         print("jmp _main\n", file=file, end = "")
         for method in self.methods:
             compiler.currentMethodIdentifier = method.identifier
-            method.compile(compiler, file)
+            method.compile(compiler, file, withComments)
 
     @classmethod
     def createRandom(cls, context):

@@ -31,21 +31,24 @@ class IfStatement(Statement):
             self.elseStatement = Statement.parse(compiler, 0)
         return self
 
-    def compile(self, compiler : Compiler, file):
-        self.expression.compile(compiler, file)
+    def compile(self, compiler : Compiler, file, withComments = False):
+        if withComments: print(f";if({self.expression}){'{'}", file = file)
+        self.expression.compile(compiler, file, withComments)
         statementEndLabel = compiler.newLabel()
         print("rax = rax", file = file)
         print(f"jz {statementEndLabel}", file = file)
-        self.statement.compile(compiler, file)
+        self.statement.compile(compiler, file, withComments)
         if self.elseStatement is not None:
+            if withComments: print(";} else {", file = file)
             elseEndLabel = compiler.newLabel()
             print(f"jmp {elseEndLabel}", file = file)
             print(f"{statementEndLabel}:", file = file)
-            self.elseStatement.compile(compiler, file)
+            self.elseStatement.compile(compiler, file, withComments)
             print(f"{elseEndLabel}:", file = file)
         else:
                 print(f"{statementEndLabel}:", file = file)
-        
+        if withComments: print(";}", file = file)
+
     @classmethod
     def createRandom(cls, context):
         obj = cls()

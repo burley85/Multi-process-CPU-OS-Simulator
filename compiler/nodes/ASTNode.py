@@ -11,7 +11,7 @@ class ASTNode(ABC):
         ...
     
     @abstractmethod
-    def compile(self, compiler : Compiler, file):
+    def compile(self, compiler : Compiler, file, withComments = False):
         ...
 
     @classmethod

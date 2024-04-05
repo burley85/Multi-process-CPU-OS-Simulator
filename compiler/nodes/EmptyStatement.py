@@ -16,8 +16,8 @@ class EmptyStatement(Statement):
         compiler.expect(TokenType.SEMICOLON)
         return self
 
-    def compile(self, compiler: Compiler, file):
-        return
+    def compile(self, compiler: Compiler, file, withComments):
+        if withComments: print(f";{self}", file = file)
 
     @classmethod
     def createRandom(cls, context):
