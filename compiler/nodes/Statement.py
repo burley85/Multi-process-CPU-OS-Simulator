@@ -23,9 +23,7 @@ class Statement(ASTNode):
                 TokenType.LBRACE : Block.Block,
             }
             statement = map.get(compiler.currentToken().type, ArithmeticStatement.ArithmeticStatement)()
-            if(hasattr(statement, "stackSize")):
-                statement.parse(compiler, stackOffset)
-            else: statement.parse(compiler)
+            statement.parse(compiler, stackOffset)
 
         else: statement = EmptyStatement.EmptyStatement().parse(compiler, stackOffset)
         return statement
@@ -45,11 +43,11 @@ class Statement(ASTNode):
         from nodes.Block import Block
         from nodes.EmptyStatement import EmptyStatement
         weights = {
-            IfStatement : 0,    #NOT YET IMPLEMENTED
-            WhileStatement : 0, #NOT YET IMPLEMENTED
+            IfStatement : .1,
+            WhileStatement : .1,
             ReturnStatement : 1,
             ArithmeticStatement : 1,
-            Block : .1,
+            Block : .25,
             EmptyStatement : 1,
         }
         return Randomizer.weightedChoice(weights).createRandom(context)

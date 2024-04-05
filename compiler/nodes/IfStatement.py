@@ -1,14 +1,15 @@
 from Compiler import Compiler, TokenType
 from nodes.Expression import Expression
 from nodes.Statement import Statement
+import Randomizer
 
 '''<if_statement> ::= "if" "(" <expression> ")" <statement> <else_statement>
    <else_statement> ::= "" | "else" <statement>'''
 class IfStatement(Statement):
     @property
     def stackSize(self):
-        if self.elseStatement is None: return self.statement.stackSize()
-        else: return max(self.elseStatement.stackSize(), self.statement.stackSize())
+        if self.elseStatement is None: return self.statement.stackSize
+        else: return max(self.elseStatement.stackSize, self.statement.stackSize)
     
     def __str__(self):
         if self.elseStatement is None: return f"if({str(self.expression)}){self.statement}"
@@ -45,3 +46,13 @@ class IfStatement(Statement):
         else:
                 print(f"{statementEndLabel}:", file = file)
         
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        probabilityOfElseStatement = 0.3
+        obj.expression = Expression.createRandom(context)
+        if obj.expression is None: return None
+        obj.statement = Statement.createRandom(context)
+        if Randomizer.bernoulliDistribution(probabilityOfElseStatement):
+            obj.elseStatement = Statement.createRandom(context)
+        return obj

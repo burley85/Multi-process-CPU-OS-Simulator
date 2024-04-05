@@ -1,12 +1,13 @@
 from Compiler import Compiler, TokenType
 from nodes.Expression import Expression
 from nodes.Statement import Statement
+import Randomizer
 
 '''<while_statement> ::= "while" "(" <expression> ")" <statement>'''
 class WhileStatement(Statement):
     @property
     def stackSize(self):
-        return self.statement.stackSize()
+        return self.statement.stackSize
     
     def __init__(self):
         self.expression = None
@@ -34,4 +35,10 @@ class WhileStatement(Statement):
         print("rax = rax", file = file)
         print(f"jnz {statementStartLabel}", file = file)
 
-        
+    @classmethod
+    def createRandom(cls, context):
+        obj = cls()
+        obj.expression = Expression.createRandom(context)
+        if obj.expression is None: return None
+        obj.statement = Statement.createRandom(context)
+        return obj
