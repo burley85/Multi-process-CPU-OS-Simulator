@@ -31,7 +31,7 @@ class Assignment(ASTNode):
     def parse(self, compiler : Compiler):
         assignOp = [TokenType.ASSIGN, TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
             TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN, TokenType.MODULO_ASSIGN]
-        if compiler.currentToken() == TokenType.DEREF:
+        if compiler.currentToken().type == TokenType.DEREF:
             compiler.nextToken()
             self.derefLValue = True
         self.lValueID = compiler.expect(TokenType.IDENTIFIER).value
@@ -51,23 +51,28 @@ class Assignment(ASTNode):
             TokenType.DECREMENT: "- 1"
         }
 
-        if(self.lValueRefDepth > 0): compiler.genericError(f"Dereference of l-values not yet implemented")
         if(self.operator == TokenType.MODULO_ASSIGN): compiler.genericError(f"Modulo not yet implemented")
 
         if(self.expression != None):
             self.expression.compile(compiler, file, withComments) #Stores result of expression in rax
         
-        #Load lvalue
+
         decl = compiler.findDeclaration(self.lValueID)
+
+        #Load lvalue
         print(f"rbp {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
-        print("rbx = (rbp)", file = file)
+        if self.derefLValue:
+            print("rcx = (rbp)", file = file)
+            print("rbx = (rcx)", file = file)
+        else: print("rbx = (rbp)", file = file)
         
         #Calculate
         if(self.expression != None): print(f"rbx {opMap.get(self.operator)} rax", file = file)
         else: print(f"rbx{opMap.get(self.operator)}", file = file)
 
         #Write to lvalue
-        print("(rbp) = rbx", file = file)
+        if self.derefLValue: print("(rcx) = rbx", file = file)
+        else: print("(rbp) = rbx", file = file)
         print(f"rbp {'+' if decl.stackOffset > 0 else '-'} {abs(decl.stackOffset)}", file = file)
 
     @classmethod

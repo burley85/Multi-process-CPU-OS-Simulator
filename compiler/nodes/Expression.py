@@ -49,6 +49,17 @@ class Expression(ASTNode):
     def compile(self, compiler : Compiler, file, withComments = False):
         if isinstance(self.child, Call) or isinstance(self.child, Comparison):
            self.child.compile(compiler, file, withComments)
+        if self.unaryOperator == TokenType.ADDR:
+            decl = compiler.findDeclaration(self.child.value)
+            print(f"rbp {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
+            print("rax = rbp", file = file)
+            print(f"rbp {'+' if decl.stackOffset > 0 else '-'} {abs(decl.stackOffset)}", file = file)
+        elif self.unaryOperator == TokenType.DEREF:
+            decl = compiler.findDeclaration(self.child.value)
+            print(f"rbp {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
+            print("rax = (rbp)", file = file)
+            print("rax = (rax)", file = file)
+            print(f"rbp {'+' if decl.stackOffset > 0 else '-'} {abs(decl.stackOffset)}", file = file)
         elif self.unaryOperator != None:
             compiler.genericError(f'Expression type not yet implemented: "{self.unaryOperator}" <{self.child.type}>')
         elif self.child.type == TokenType.NUMBER: 
