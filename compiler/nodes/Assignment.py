@@ -8,7 +8,7 @@ import Randomizer
 class Assignment(ASTNode):
     def __init__(self):
         self.lValueID = None
-        self.lValueRefDepth = 0
+        self.derefLValue = False
         self.operator = None
         self.expression = None
         
@@ -24,16 +24,16 @@ class Assignment(ASTNode):
             TokenType.DECREMENT: "--"
         }
         if self.expression != None:
-            return f'{"*" * self.lValueRefDepth}{self.lValueID} {opMap[self.operator]} {self.expression}'
+            return f'{"*" if self.derefLValue else ""}{self.lValueID} {opMap[self.operator]} {self.expression}'
         else:
-            return f'{"*" * self.lValueRefDepth}{self.lValueID}{opMap[self.operator]}'
+            return f'{"*" if self.derefLValue else ""}{self.lValueID}{opMap[self.operator]}'
         
     def parse(self, compiler : Compiler):
         assignOp = [TokenType.ASSIGN, TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN,
             TokenType.MULTIPLY_ASSIGN, TokenType.DIVIDE_ASSIGN, TokenType.MODULO_ASSIGN]
-        while(compiler.currentToken().type == TokenType.DEREF):
+        if compiler.currentToken() == TokenType.DEREF:
             compiler.nextToken()
-            self.lValueRefDepth += 1
+            self.derefLValue = True
         self.lValueID = compiler.expect(TokenType.IDENTIFIER).value
         self.operator = compiler.expect(assignOp + [TokenType.INCREMENT, TokenType.DECREMENT]).type
         if self.operator in assignOp:

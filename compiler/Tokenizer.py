@@ -81,7 +81,7 @@ class Tokenizer:
         else:
             self.source = io.StringIO(source)
         self.position = 0
-        self.token = None
+        self.token = Token(TokenType.UNKNOWN)
         self.nextToken()
 
     def nextToken(self):

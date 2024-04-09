@@ -29,7 +29,7 @@ class Compiler:
         tokenList = []
         for i in range(n):
             tokenList.append(self.nextToken())
-        self.tokenizer.position, self.tokenizer.currentToken = originalPos, originalCurrentToken
+        self.tokenizer.position, self.tokenizer.token = originalPos, originalCurrentToken
         self.tokenizer.source.seek(originalPos)
         return tokenList
     
@@ -72,4 +72,4 @@ class Compiler:
     
     def compile(self, file):
         self.program.parse(self)
-        return self.program.compile(self, file)
+        return self.program.compile(self, file, True)
