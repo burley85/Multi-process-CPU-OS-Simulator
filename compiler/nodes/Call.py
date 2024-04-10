@@ -39,9 +39,9 @@ class Call(ASTNode):
         for (parameter, argument) in zip(methodHeader.parameterList, self.argument_list):
             #Load arg
             argDecl = compiler.findDeclaration(argument.value)
-            print(f"rbp {'-' if argDecl.stackOffset > 0 else '+'} {abs(argDecl.stackOffset)}", file = file)
-            print("rax = (rbp)", file = file)
-            print(f"rbp {'+' if argDecl.stackOffset > 0 else '-'} {abs(argDecl.stackOffset)}", file = file)
+            print("rax = rbp", file = file)
+            print(f"rax {'-' if argDecl.stackOffset > 0 else '+'} {abs(argDecl.stackOffset)}", file = file)
+            print("rax = (rax)", file = file)
             #Push arg onto stack
             print("push rax", file = file)
         #jump to method

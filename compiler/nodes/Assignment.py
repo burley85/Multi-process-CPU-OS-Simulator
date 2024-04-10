@@ -60,20 +60,17 @@ class Assignment(ASTNode):
         decl = compiler.findDeclaration(self.lValueID)
 
         #Load lvalue
-        print(f"rbp {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
-        if self.derefLValue:
-            print("rcx = (rbp)", file = file)
-            print("rbx = (rcx)", file = file)
-        else: print("rbx = (rbp)", file = file)
+        print("rcx = rbp", file = file)
+        print(f"rcx {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
+        if self.derefLValue: print("rcx = (rcx)", file = file)
+        print("rbx = (rcx)", file = file)
         
         #Calculate
         if(self.expression != None): print(f"rbx {opMap.get(self.operator)} rax", file = file)
         else: print(f"rbx{opMap.get(self.operator)}", file = file)
 
         #Write to lvalue
-        if self.derefLValue: print("(rcx) = rbx", file = file)
-        else: print("(rbp) = rbx", file = file)
-        print(f"rbp {'+' if decl.stackOffset > 0 else '-'} {abs(decl.stackOffset)}", file = file)
+        print("(rcx) = rbx", file = file)
 
     @classmethod
     def createRandom(cls, context):

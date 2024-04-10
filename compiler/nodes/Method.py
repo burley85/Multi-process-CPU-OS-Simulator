@@ -37,6 +37,12 @@ class Method(ASTNode):
         print("rsp - " + str(self.stackSize), file = file)
 
         self.block.compile(compiler, file, withComments)
+
+        #Cleanup the stack
+        print("rsp + " + str(self.stackSize), file = file)
+        print("rsp = rbp", file = file)
+        print("pop rbp", file = file)
+
         if withComments: print(";}", file = file)
         compiler.leaveBlock()
 
