@@ -51,10 +51,10 @@ class Expression(ASTNode):
            self.child.compile(compiler, file, withComments)
         if self.unaryOperator == TokenType.ADDR:
             decl = compiler.findDeclaration(self.child.value)
-            print(Compiler.addrOfVarCode("rax", decl))
+            print(Compiler.addrOfVarCode("rax", decl), file = file)
         elif self.unaryOperator == TokenType.DEREF:
             decl = compiler.findDeclaration(self.child.value)
-            print(Compiler.derefVarCode("rax", decl))
+            print(Compiler.derefVarCode("rax", decl), file = file)
         elif self.unaryOperator != None:
             compiler.genericError(f'Expression type not yet implemented: "{self.unaryOperator}" <{self.child.type}>')
         elif self.child.type == TokenType.NUMBER: 
@@ -64,7 +64,7 @@ class Expression(ASTNode):
         elif self.child.type == TokenType.IDENTIFIER:
             #Load value into rax
             decl = compiler.findDeclaration(self.child.value)
-            print(Compiler.loadVarCode("rax", decl), file)
+            print(Compiler.loadVarCode("rax", decl), file = file)
 
     @classmethod
     def createRandom(cls, context):

@@ -36,7 +36,7 @@ class Method(ASTNode):
         self.block.compile(compiler, file, withComments)
 
         #Cleanup the stack
-        print(Compiler.stackTeardownCode(self.stackSize), file = file)
+        print(Compiler.stackTeardownCode(), file = file)
 
         if withComments: print(";}", file = file)
         compiler.leaveBlock()

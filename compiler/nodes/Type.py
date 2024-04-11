@@ -4,6 +4,8 @@ from nodes.ASTNode import ASTNode
 import Randomizer
 
 PrimitiveType = Enum("PrimitiveType", "CHAR, SHORT, INT, LONG, LONG_LONG")
+TypeSizes = {PrimitiveType.CHAR: 1, PrimitiveType.SHORT: 2, PrimitiveType.INT: 4,
+             PrimitiveType.LONG: 8, PrimitiveType.LONG_LONG: 8}
 
 '''<type> ::= "unsigned" <primitive_type> | <primitive_type> |
               "unsigned" <primitive_type> <pointer> | <primitive_type> <pointer> | "void" <pointer>
@@ -40,7 +42,7 @@ class Type(ASTNode):
             TokenType.INT : PrimitiveType.INT,
             TokenType.LONG : PrimitiveType.LONG,
             TokenType.VOID : None
-        }.get(token.type)
+        }.get(token.type, None)
 
         while(compiler.currentToken().type == TokenType.DEREF):
             compiler.nextToken()
@@ -49,13 +51,7 @@ class Type(ASTNode):
             compiler.genericError("Invalid type")
 
         if(self.pointerDepth > 0): self.size = 8
-        else: self.size = {
-            PrimitiveType.CHAR : 1,
-            PrimitiveType.SHORT : 2,
-            PrimitiveType.INT : 4,
-            PrimitiveType.LONG : 4,
-            PrimitiveType.LONG_LONG : 8,
-        }.get(self.type)
+        else: self.size = TypeSizes.get(self.type)
 
         return self
 

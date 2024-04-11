@@ -2,6 +2,8 @@ from Compiler import Compiler, TokenType
 from nodes.Expression import Expression
 from nodes.ASTNode import ASTNode
 import Randomizer
+from nodes.Declaration import Declaration
+from nodes.Type import *
 
 '''<assignment> ::= <l_value> <assign_op> <expression> | <l_value> "++" | <l_value> "--"
    <l_value> ::= <identifier> | "*" <identifier>'''
@@ -69,7 +71,7 @@ class Assignment(ASTNode):
         else: print(f"rbx{opMap.get(self.operator)}", file = file)
 
         #Write to lvalue
-        print("(rcx) = rbx", file = file)
+        print(Compiler.storeVarCode("rbx", "rcx", "rdx", decl), file = file)
 
     @classmethod
     def createRandom(cls, context):
@@ -82,7 +84,7 @@ class Assignment(ASTNode):
         if obj.lValueID == None: return None
         #Pick random operator
         obj.operator = Randomizer.weightedChoice({
-            TokenType.ASSIGN : 1,
+            TokenType.ASSIGN : 5,
             TokenType.PLUS_ASSIGN : 1,
             TokenType.MINUS_ASSIGN : 1,
             TokenType.MULTIPLY_ASSIGN : 1,
@@ -96,3 +98,36 @@ class Assignment(ASTNode):
         if obj.operator not in {TokenType.INCREMENT, TokenType.DECREMENT}:
             obj.expression = Expression.createRandom(context)
         return obj
+    
+        decl = compiler.findDeclaration(self.lValueID)
+        lValueSize = decl.size
+
+        #Load lvalue
+        print("rbx = rbp")
+        print(f"rbx {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
+        if self.derefLValue:
+            print("rcx = (rbp)", file = file)
+            print("rbx = (rcx)", file = file)
+        else: print("rbx = (rbp)", file = file)
+
+        if lValueSize < 8:
+            #Isolate lValueSize first bytes of rbx
+            #And store the last 8 - lValueSize bytes in rcx
+            lValueBits = lValueSize * 8
+            remainingBits = 64 - lValueBits
+            print("rcx = rbx", file = file)
+            print(f"rbx / {2**remainingBits}", file = file)
+            print(f"rcx * {2**lValueBits}", file = file)
+            print(f"rcx / {2**lValueBits}", file = file)
+
+        #Calculate
+        if(self.expression != None): print(f"rbx {opMap.get(self.operator)} rax", file = file)
+        else: print(f"rbx{opMap.get(self.operator)}", file = file)
+
+        #Isolate lValueSize first bytes of rbx
+        if lValueSize < 8:
+            bitShift = 64 - (lValueSize * 8)
+            print(f"rbx * {2**bitShift}", file = file)
+            print("rbx + rcx", file = file)
+            #print(f"rbx / {2**bitShift}", file = file)
+            
