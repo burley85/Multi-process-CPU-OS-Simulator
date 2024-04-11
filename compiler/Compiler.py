@@ -73,3 +73,101 @@ class Compiler:
     def compile(self, file):
         self.program.parse(self)
         return self.program.compile(self, file, True)
+
+    @classmethod
+    def addrOfVarCode(cls, register, decl):
+        s = f"{register} = rbp\n"
+        s += f"{register} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
+        return s
+
+    @classmethod
+    def loadVarCode(cls, register, decl):
+        s = f"{register} = rbp\n"
+        s += f"{register} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
+        s += f"{register} = ({register})\n"
+        return s
+    
+    @classmethod
+    def derefVarCode(cls, register, decl):
+        s = f"{register} = rbp\n"
+        s += f"{register} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
+        s += f"{register} = ({register})\n"
+        s += f"{register} = ({register})\n"
+        return s
+    
+    @classmethod
+    def storeVarCode(cls, register, decl):
+        pass
+
+    @classmethod
+    def stackSetupCode(cls, stackSize):
+        s = "push rbp\n"
+        s += "rbp = rsp\n"
+        s += f"rsp - {stackSize}\n"
+
+    @classmethod
+    def stackTeardownCode(cls):
+        s += "rsp = rbp\n"
+        s += "pop rbp\n"
+
+    @classmethod
+    def comparisonCode(cls, operator : TokenType):
+        return {
+            TokenType.EQUALS:
+                f"rax - rbx\n\
+                jnz l1\n\
+                rax = 1\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 0\n\
+                l2:\n",
+            TokenType.NOT_EQUALS:
+                f"rax - rbx\n\
+                jz l1\n\
+                rax = 1\n\
+                l1:\n",
+            TokenType.LESS:
+                f"rax - rbx\n\
+                jns l1\n\
+                rax = 1\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 0\n\
+                l2:\n",
+            TokenType.GREATER:
+                f"rax - rbx\n\
+                js l1\n\
+                jz l1\n\
+                rax = 1\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 0\n\
+                l2:\n",
+            TokenType.LESS_EQUALS:
+                f"rax - rbx\n\
+                js l1\n\
+                jz l1\n\
+                rax = 0\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 1\n\
+                l2:\n",
+            TokenType.GREATER_EQUALS:
+                f"rax - rbx\n\
+                jns l1\n\
+                rax = 0\n\
+                jmp l2\n\
+                l1:\n\
+                rax = 1\n\
+                l2:\n",
+            TokenType.AND:
+                f"rax * rbx\n\
+                jz l1\n\
+                rax = 1\n\
+                l1:\n",
+            TokenType.OR:
+                f"rax + rbx\n\
+                jz l1\n\
+                rax = 1\n\
+                l1:\n"
+        }.get(operator, "")

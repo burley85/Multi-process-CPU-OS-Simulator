@@ -35,18 +35,14 @@ class Comparison(ASTNode):
         #Load op1 into rax
         if(self.op1.type == TokenType.IDENTIFIER):
             decl = compiler.findDeclaration(self.op1.value)
-            print("rax = rbp")
-            print(f"rax {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
-            print("rax = (rax)", file = file)
+            print(Compiler.loadVarCode("rax", decl), file = file)
         else:
             print(f"rax = {self.op1.value}", file = file)
 
         #Load op2 into rbx
         if(self.op2.type == TokenType.IDENTIFIER):
             decl = compiler.findDeclaration(self.op2.value)
-            print("rbx = rbp")
-            print(f"rbx {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
-            print("rbx = (rbx)", file = file)
+            print(Compiler.loadVarCode("rbx", decl), file = file)
         else:
             print(f"rbx = {self.op2.value}", file = file)
         

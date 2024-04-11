@@ -28,8 +28,7 @@ class ReturnStatement(Statement):
             self.expression.compile(compiler, file, withComments)
         
         #Tear down the stack
-        print("rsp = rbp", file = file)
-        print("pop rbp", file = file)
+        print(Compiler.stackTeardownCode(), file = file)
         
         if compiler.currentMethodIdentifier == "main": print("halt", file = file)
         else: print("ret", file = file)

@@ -31,17 +31,12 @@ class Method(ASTNode):
         compiler.enterBlock()
         self.method_header.compile(compiler, file, withComments)
         if withComments: print(";{", file = file)
-        #Setup the stack
-        print("push rbp", file = file)
-        print("rbp = rsp", file = file)
-        print("rsp - " + str(self.stackSize), file = file)
+        print(Compiler.stackSetupCode(self.stackSize), file = file)
 
         self.block.compile(compiler, file, withComments)
 
         #Cleanup the stack
-        print("rsp + " + str(self.stackSize), file = file)
-        print("rsp = rbp", file = file)
-        print("pop rbp", file = file)
+        print(Compiler.stackTeardownCode(self.stackSize), file = file)
 
         if withComments: print(";}", file = file)
         compiler.leaveBlock()

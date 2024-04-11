@@ -60,8 +60,7 @@ class Assignment(ASTNode):
         decl = compiler.findDeclaration(self.lValueID)
 
         #Load lvalue
-        print("rcx = rbp", file = file)
-        print(f"rcx {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}", file = file)
+        print(Compiler.addrOfVarCode("rcx", decl), file = file)
         if self.derefLValue: print("rcx = (rcx)", file = file)
         print("rbx = (rcx)", file = file)
         
