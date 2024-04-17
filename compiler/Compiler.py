@@ -85,6 +85,7 @@ class Compiler:
         s = f"{register} = rbp\n"
         s += f"{register} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
         s += f"{register} = ({register})\n"
+        s += f"{register} / {2 ** (64 - (decl.size * 8))}"
         return s
     
     @classmethod
@@ -96,8 +97,24 @@ class Compiler:
         return s
     
     @classmethod
-    def storeVarCode(cls, register, decl):
-        pass
+    def storeVarCode(cls, valueRegister, tempRegister1, tempRegister2, decl):
+        varBits = decl.size * 8
+        ptrRegister = tempRegister1
+        maskedValue = tempRegister2
+        s = f"{ptrRegister} = rbp\n"
+        s += f"{ptrRegister} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
+        if(decl.size < 8):
+            #Isolate last 64 - varBits bits of original value
+            s += f"{maskedValue} = ({ptrRegister})\n"
+            s += f"{maskedValue} * {2**varBits}\n"
+            s += f"{maskedValue} / {2**varBits}\n"
+            #Isolate last varBits bits of valueRegister
+            s += f"{valueRegister} * {2 ** (64 - varBits)}\n"
+            #Combine last 64 - varBits bits of original value with first varBits bits of valueRegister
+            s += f"{valueRegister} + {maskedValue}\n"
+
+        s += f"({ptrRegister}) = {valueRegister}\n"
+        return s
 
     @classmethod
     def stackSetupCode(cls, stackSize):
@@ -107,7 +124,7 @@ class Compiler:
 
     @classmethod
     def stackTeardownCode(cls):
-        s += "rsp = rbp\n"
+        s = "rsp = rbp\n"
         s += "pop rbp\n"
 
     @classmethod
