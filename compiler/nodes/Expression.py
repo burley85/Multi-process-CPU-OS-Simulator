@@ -5,8 +5,8 @@ from nodes.Comparison import Comparison
 from nodes.ASTNode import ASTNode
 import Randomizer
 
-'''<expression> ::= <id_or_literal> | "*" <identifier> | "&" <identifier> | "!" <id_or_literal> |
-                    <comparison> | <call>'''
+'''<expression> ::= <id_or_literal> | "*" <identifier> | "&" <identifier> | "sizeof" <identifier> |
+                    "!" <id_or_literal> | <comparison> | <call>'''
 class Expression(ASTNode):
     def __init__(self):
         self.child : Token | Comparison | Call = None
@@ -27,15 +27,18 @@ class Expression(ASTNode):
         current = compiler.currentToken()
         peek = compiler.peekToken()
 
-        if current.type in [TokenType.DEREF, TokenType.ADDR, TokenType.NOT]:
+        if current.type in [TokenType.DEREF, TokenType.ADDR, TokenType.NOT, TokenType.SIZEOF]:
             self.unaryOperator = compiler.expect([TokenType.DEREF, TokenType.ADDR,
-                                                  TokenType.NOT]).type
+                                                  TokenType.NOT, TokenType.SIZEOF]).type
             if current.type == TokenType.DEREF:
                 self.child = compiler.expect(TokenType.IDENTIFIER,
-                                             "operand of '*' must be a pointer")
+                                             "operand of '*' must be an identifier")
             elif current.type == TokenType.ADDR:
                 self.child = compiler.expect(TokenType.IDENTIFIER,
-                                             "operand of '&' must be an lvalue")
+                                             "operand of '&' must be an identifier")
+            elif current.type == TokenType.SIZEOF:
+                self.child = compiler.expect(TokenType.IDENTIFIER,
+                                             "operand of 'sizeof' must be an identifier")
             elif current.type == TokenType.NOT:
                 self.child = compiler.expect(idOrLiteral)
 
@@ -55,6 +58,9 @@ class Expression(ASTNode):
         elif self.unaryOperator == TokenType.DEREF:
             decl = compiler.findDeclaration(self.child.value)
             print(Compiler.derefVarCode("rax", decl), file = file)
+        elif self.unaryOperator == TokenType.SIZEOF:
+            decl = compiler.findDeclaration(self.child.value)
+            print(f"rax = {decl.size}", file = file)
         elif self.unaryOperator != None:
             compiler.genericError(f'Expression type not yet implemented: "{self.unaryOperator}" <{self.child.type}>')
         elif self.child.type == TokenType.NUMBER: 
