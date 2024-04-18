@@ -2,14 +2,15 @@ import sys
 from Compiler import Compiler, Token, TokenType
 from nodes.Call import Call
 from nodes.Comparison import Comparison
+from nodes.Cast import Cast
 from nodes.ASTNode import ASTNode
 import Randomizer
 
 '''<expression> ::= <id_or_literal> | "*" <identifier> | "&" <identifier> | "sizeof" <identifier> |
-                    "!" <id_or_literal> | <comparison> | <call>'''
+                    "!" <id_or_literal> | <cast> | <comparison> | <call>'''
 class Expression(ASTNode):
     def __init__(self):
-        self.child : Token | Comparison | Call = None
+        self.child : Token | Comparison | Call | Cast = None
         self.unaryOperator : TokenType = None
 
     def __str__(self):
@@ -42,6 +43,8 @@ class Expression(ASTNode):
             elif current.type == TokenType.NOT:
                 self.child = compiler.expect(idOrLiteral)
 
+        elif(current.type == TokenType.LPAREN):
+            self.child = Cast().parse(compiler)
         elif(current.type == TokenType.IDENTIFIER and peek.type == TokenType.LPAREN):
             self.child = Call().parse(compiler)
         elif(current.type in idOrLiteral and peek.type in comparisonOperator):
@@ -52,7 +55,7 @@ class Expression(ASTNode):
     def compile(self, compiler : Compiler, file, withComments = False):
         if isinstance(self.child, Call) or isinstance(self.child, Comparison):
            self.child.compile(compiler, file, withComments)
-        if self.unaryOperator == TokenType.ADDR:
+        elif self.unaryOperator == TokenType.ADDR:
             decl = compiler.findDeclaration(self.child.value)
             print(Compiler.addrOfVarCode("rax", decl), file = file)
         elif self.unaryOperator == TokenType.DEREF:

@@ -22,7 +22,7 @@ class ArithmeticStatement(Statement):
                     TokenType.INCREMENT, TokenType.DECREMENT]
         first = compiler.currentToken()
         if first.type in {TokenType.ADDR, TokenType.NOT, TokenType.NUMBER, TokenType.STRING,
-                          TokenType.CHAR}:
+                          TokenType.CHAR, TokenType.SIZEOF, TokenType.LPAREN}:
             self.child = Expression().parse(compiler) #Starts with a non-lvalue
         elif first.type == TokenType.IDENTIFIER:
             peek = compiler.peekToken()

@@ -39,8 +39,12 @@ class Call(ASTNode):
         for (parameter, argument) in zip(methodHeader.parameterList, self.argument_list):
             #Load arg
             argDecl = compiler.findDeclaration(argument.value)
-            print(Compiler.loadVarCode("rax", argDecl))
+            print(Compiler.loadVarCode("rax", argDecl), file = file)
             #Push arg onto stack
             print("push rax", file = file)
         #jump to method
         print(f"call _{self.identifier}", file = file)
+
+    @classmethod
+    def createRandom(cls, context):
+        return None

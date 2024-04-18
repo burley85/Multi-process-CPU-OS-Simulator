@@ -121,11 +121,13 @@ class Compiler:
         s = "push rbp\n"
         s += "rbp = rsp\n"
         s += f"rsp - {stackSize}\n"
+        return s
 
     @classmethod
     def stackTeardownCode(cls):
         s = "rsp = rbp\n"
         s += "pop rbp\n"
+        return s
 
     @classmethod
     def comparisonCode(cls, operator : TokenType):
