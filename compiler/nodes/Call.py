@@ -41,7 +41,11 @@ class Call(ASTNode):
             argDecl = compiler.findDeclaration(argument.value)
             print(Compiler.loadVarCode("rax", argDecl), file = file)
             #Push arg onto stack
-            print("push rax", file = file)
+            if argDecl.size < 8:
+                print(f"rax * {2**((8 - argDecl.size) * 8)}", file = file)
+                print("push rax", file = file)
+                print(f"rsp + {8 - argDecl.size}", file = file)
+            else: print("push rax", file = file)
         #jump to method
         print(f"call _{self.identifier}", file = file)
 

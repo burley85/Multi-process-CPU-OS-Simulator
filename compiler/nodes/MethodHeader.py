@@ -11,6 +11,7 @@ class MethodHeader(ASTNode):
         self.returnType = None
         self.identifier = ""
         self.parameterList = []
+        self.parameterSize = 0
 
     def __str__(self):
         s = f"{self.returnType} {self.identifier}("
@@ -27,10 +28,9 @@ class MethodHeader(ASTNode):
         self.identifier = compiler.expect(TokenType.IDENTIFIER).value
         compiler.expect(TokenType.LPAREN)
 
-        argStackPosition = -16
         while compiler.currentToken().type != TokenType.RPAREN:
-            self.parameterList.append(Declaration().parse(compiler, argStackPosition))
-            argStackPosition -= 8
+            self.parameterList.append(Declaration().parse(compiler, 0))
+            self.parameterSize += self.parameterList[-1].size
             if compiler.currentToken().type != TokenType.RPAREN: compiler.expect(TokenType.COMMA)
 
         compiler.expect(TokenType.RPAREN)
@@ -38,7 +38,11 @@ class MethodHeader(ASTNode):
 
     def compile(self, compiler : Compiler, file, withComments = False):
         if withComments: print(f";{self}", file = file)
-        for parameter in self.parameterList:
+
+        parameterStackOffset = -8
+        for parameter in reversed(self.parameterList):
+            parameterStackOffset -= parameter.size
+            parameter.stackOffset = parameterStackOffset
             compiler.addDeclaration(parameter)
         print(f"_{self.identifier}:\n", file=file, end = "")
         
