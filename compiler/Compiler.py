@@ -1,7 +1,14 @@
 from Tokenizer import Tokenizer, Token, TokenType
+import os
+import tempfile
 
 class Compiler:
     def __init__(self, source):
+        newSource = tempfile.NamedTemporaryFile(delete = False, suffix = ".c")
+        newSource.close()
+        os.system(f"gcc -E -P {source.name} > {newSource.name}")
+        source = open(newSource.name)
+
         self.tokenizer = Tokenizer(source)
         import nodes.Program
         self.program = nodes.Program.Program()
@@ -72,7 +79,11 @@ class Compiler:
     
     def compile(self, file):
         self.program.parse(self)
-        return self.program.compile(self, file, True)
+        self.tokenizer.source.close()
+        os.system(f"gcc -fsyntax-only -Werror -Wconversion {self.tokenizer.source.name}")
+        os.remove(self.tokenizer.source.name)
+        self.program.compile(self, file, True)
+        
 
     @classmethod
     def addrOfVarCode(cls, register, decl):
