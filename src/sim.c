@@ -3,9 +3,9 @@
 #include "breakpoint.h"
 #include "encoding.h"
 #include "symbol_map.h"
+#include "configs.h"
 
 #define OBJ_NAME "SimCPUObj"
-#define SIM_MODE CONTINUOUS
 
 //Sim gets reset every time main program is run or object is created
 void reset_sim(sim* s){
@@ -46,9 +46,9 @@ sim* get_sim(){
     return simPtr;  
 }
 
-void run_sim(sim* s){
+void run_sim(sim* s, struct config configs){
     cpu* cpu = &(s->cpu);
-    s->mode = SIM_MODE;
+    s->mode = configs.startingMode;
     s->running = true;
     
     while(1){
