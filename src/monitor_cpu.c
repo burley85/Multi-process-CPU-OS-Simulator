@@ -273,9 +273,13 @@ void load_symbols(symbol_map* map){
 }
 
 int main(){
-    //Get HANDLE to the console
+    //Fix console window
+    HWND consoleWindow = GetConsoleWindow();
+    SetWindowLong(consoleWindow, GWL_STYLE, GetWindowLong(consoleWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
+    
+    //Get HANDLEs
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-
+    HANDLE h2 = GetStdHandle(STD_INPUT_HANDLE);
 
     CHAR_INFO buffer[3600] = {0};
 
@@ -297,13 +301,24 @@ int main(){
     symbol_map symbols = {labels, label_addresses, s->label_count};
     load_symbols(&symbols);
     while(1){
-
         update_decoded_instructions(&(s->cpu), decoded_instructions, instruction_positions, symbols);
         update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
         if(s->mode != EXIT && !s->running){
             update_decoded_instructions(&(s->cpu), decoded_instructions, instruction_positions, symbols);
             update_cpu_buffer(buffer, s, decoded_instructions, instruction_positions);
-            scanf("%*c");
+            
+            char c = 0;
+            INPUT_RECORD input;
+            DWORD d;
+            while(c != 'r' && c != 'q' && c != 's'){
+                ReadConsoleInput(h2, &input, 1, &d);
+                if(input.EventType == KEY_EVENT && !input.Event.KeyEvent.bKeyDown)
+                    c = input.Event.KeyEvent.uChar.UnicodeChar;
+
+            }
+            if(c == 'q') exit(0);
+            if(c == 'r') s->mode = CONTINUOUS;
+            if(c == 's') s->mode = STEP;
             s->running = true;
         }
         if(!WriteConsoleOutput(h, buffer, buffer_size, buffer_coord, &write_region)){
