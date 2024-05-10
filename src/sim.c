@@ -50,7 +50,9 @@ void run_sim(sim* s, struct config configs){
     cpu* cpu = &(s->cpu);
     s->mode = configs.startingMode;
     s->running = true;
-    
+
+    for(int i = 0; i < configs.breakpointCount; i++) add_breakpoint_at_label(s, configs.breakpoints[i]);
+
     while(1){
         execute_current_instruction(cpu);
 
@@ -197,14 +199,14 @@ void encode_file(FILE* fp, sim* sim, unsigned long long start_address){
                 printf("ERROR: Label cannot be empty\n");
                 exit(1);
             }
-            if((instruction[0] < 'A' || instruction[0] > 'Z') && (instruction[0] < 'a' || instruction[0] > 'z') && instruction[0]!= '_'){
+            if((instruction[0] < 'A' || instruction[0] > 'Z') && (instruction[0] < 'a' || instruction[0] > 'z') && instruction[0] != '_'){
                 printf("ERROR: Label '%s' starts with invalid character\n", instruction);
                 exit(1);
             }
 
             for(int i = 1; i < instruction_length - 1; i++){
-                if((instruction[i] < 'A' || instruction[i] > 'Z') && (instruction[i] < 'a' || instruction[i] > 'z') && (instruction[i] < '1' || instruction[i] > '9') && instruction[i] != '_'){
-                    printf("ERROR: Label '%s' contains invalid characters\n", instruction);
+                if((instruction[i] < 'A' || instruction[i] > 'Z') && (instruction[i] < 'a' || instruction[i] > 'z') && (instruction[i] < '0' || instruction[i] > '9') && instruction[i] != '_'){
+                    printf("ERROR: Label '%s' contains invalid character %c\n", instruction, instruction[i]);
                     exit(1);
                 }
             }

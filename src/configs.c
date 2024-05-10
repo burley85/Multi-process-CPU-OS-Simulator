@@ -131,19 +131,34 @@ char* value_to_matched_string(char* value, char** options, int num_options){
 
 char** value_to_str_list(char* value, char separator, int* count){
     int value_len = strlen(value);
+
+    //Count the number of substrings and split them with null terminators
     *count = 1;
     for(int i = 0; i < value_len - 1; i++){
-        if(value[i] == separator) (*count)++;
+        if(value[i] == separator){
+            (*count)++;
+            value[i] = '\0';
+        }
     }
 
     char** list = malloc(sizeof(char*) * (*count));
-    list[0] = value;
-    int list_len = 1;
-    for(int i = 1; i < value_len - 1; i++){
-        if(value[i] == separator) value[i] = '\0';
-        list[list_len] = &(value[i + 1]);
-        list_len++;
+    if(list == NULL){
+        printf("ERROR: Failed to allocate memory in %s\n", __FUNCTION__);
+        return NULL;
     }
+
+    //Copy each of the substrings into dynamically allocated memory
+    for(int i = 0; i < *count; i++){
+        list[i] = malloc(strlen(value) + 1);
+        if(list[i] == NULL){
+            printf("ERROR: Failed to allocate memory in %s\n", __FUNCTION__);
+            return NULL;
+        }
+        strcpy(list[i], value);
+        list[i][strlen(list[i])] = '\0';
+        value += strlen(list[i]) + 1;
+    }
+
     return list;
 }
 
@@ -163,8 +178,6 @@ void parse_simulator_section(struct config *configs, FILE* fp){
                 else printf("WARNING: Unknown starting mode '%s'\n", value);
             }
         }
-        printf("%s: %s\n", line, value);
-
         line = get_next_line(fp);
     }
 } 
@@ -182,8 +195,6 @@ void parse_monitor_section(struct config *configs, FILE* fp){
             
             else printf("WARNING: Unknown config key '%s'\n", key);
         }
-        printf("%s: %s\n", line, value);
-
         line = get_next_line(fp);
     }
 }

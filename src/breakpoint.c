@@ -16,10 +16,11 @@ void add_breakpoint_at_label(sim* s, char* label){
         char* label_test = *((char**) getDynamicArray(&(s->labels), i));
         if(strcmp(label_test, label) == 0){
             unsigned long long* label_address_ptr = (unsigned long long*) getDynamicArray(&(s->label_addresses), i);
-            printf("Adding breakpoint at 0x%llx\n", *label_address_ptr);
             add_breakpoint(s, rip_equal, (void*) label_address_ptr);
+            return;
         }
     }
+    printf("WARNING: label %s not found. No breakpoint set.\n", label);
 }
 
 void add_breakpoint(sim* sim, bool (*condition_function) (cpu *, void *), void *param_ptr){
