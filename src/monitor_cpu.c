@@ -9,6 +9,7 @@
 #include "pcb.h"
 #include "sim.h"
 #include "symbol_map.h"
+#include "configs.h"
 
 #define CONSOLE_WIDTH 120
 #define CONSOLE_HEIGHT 30
@@ -273,6 +274,8 @@ void load_symbols(symbol_map* map){
 }
 
 int main(){
+    struct config configs = load_configs();
+
     //Fix console window
     HWND consoleWindow = GetConsoleWindow();
     SetWindowLong(consoleWindow, GWL_STYLE, GetWindowLong(consoleWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
@@ -310,15 +313,15 @@ int main(){
             char c = 0;
             INPUT_RECORD input;
             DWORD d;
-            while(c != 'r' && c != 'q' && c != 's'){
+            while(c != configs.runKey && c != configs.quitKey && c != configs.stepKey){
                 ReadConsoleInput(h2, &input, 1, &d);
                 if(input.EventType == KEY_EVENT && !input.Event.KeyEvent.bKeyDown)
                     c = input.Event.KeyEvent.uChar.UnicodeChar;
 
             }
-            if(c == 'q') exit(0);
-            if(c == 'r') s->mode = CONTINUOUS;
-            if(c == 's') s->mode = STEP;
+            if(c == configs.quitKey) exit(0);
+            if(c == configs.runKey) s->mode = CONTINUOUS;
+            if(c == configs.stepKey) s->mode = STEP;
             s->running = true;
         }
         if(!WriteConsoleOutput(h, buffer, buffer_size, buffer_coord, &write_region)){
