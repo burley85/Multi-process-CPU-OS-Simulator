@@ -134,9 +134,9 @@ char** value_to_str_list(char* value, char separator, int* count){
 
     //Count the number of substrings and split them with null terminators
     *count = 1;
-    for(int i = 0; i < value_len - 1; i++){
+    for(int i = 0; i < value_len; i++){
         if(value[i] == separator){
-            (*count)++;
+            if(i != value_len - 1) (*count)++;
             value[i] = '\0';
         }
     }
