@@ -35,7 +35,7 @@ class WhileStatement(Statement):
         self.expression.compile(compiler, file, False)
         print("rax = rax", file = file)
         print(f"jnz {statementStartLabel}", file = file)
-        if withComments: print("}", file = file)
+        if withComments: print(";}", file = file)
 
     @classmethod
     def createRandom(cls, context):

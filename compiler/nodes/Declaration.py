@@ -20,18 +20,18 @@ class Declaration(ASTNode):
 
     def parse(self, compiler : Compiler, stackOffset):
         self.type = Type().parse(compiler)
-        self.stackOffset = stackOffset
+        self.size = self.type.size if self.arraySize == 0 else self.type.size * self.arraySize
         self.identifier = compiler.expect(TokenType.IDENTIFIER).value
         if compiler.currentToken().type == TokenType.LBRACKET:
             compiler.nextToken()
             self.arraySize = compiler.expect(TokenType.NUMBER).value
             if self.arraySize <= 0: compiler.genericError("Array size must be greater than 0")
             compiler.expect(TokenType.RBRACKET)
-        self.size = self.type.size if self.arraySize == 0 else self.type.size * self.arraySize
+        self.stackOffset = stackOffset + self.size
         return self
 
     def compile(self, compiler : Compiler, file, withComments = False):
-        if withComments: print(f";{self}", file = file)
+        if withComments: print(f";{self} @ {self.stackOffset}", file = file)
         compiler.addDeclaration(self)
 
     @classmethod
