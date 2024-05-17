@@ -36,8 +36,10 @@ class Method(ASTNode):
         self.block.compile(compiler, file, withComments)
 
         #Cleanup the stack
-        print(Compiler.stackTeardownCode(), file = file)
-
+        if self.method_header.returnType.type == None:
+            print(Compiler.stackTeardownCode(), file = file)
+            if(self.identifier == "main"): print("halt", file = file)
+            else: print("ret", file = file)
         if withComments: print(";}", file = file)
         compiler.leaveBlock()
 
