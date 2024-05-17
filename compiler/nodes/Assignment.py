@@ -62,11 +62,9 @@ class Assignment(ASTNode):
         decl = compiler.findDeclaration(self.lValueID)
 
         #Load lvalue
-        print(Compiler.addrOfVarCode("rcx", decl), file = file)
-        if self.derefLValue: print("rcx = (rcx)", file = file)
-        print("rbx = (rcx)", file = file)
-        if decl.size < 8: print(f"rbx / {2**((8 - decl.size) * 8)}", file = file)
-        
+        print(Compiler.loadVarCode("rbx", decl), file = file)
+        if self.derefLValue: print(Compiler.derefVarCode("rbx", decl), file = file)
+
         #Calculate
         if(self.expression != None): print(f"rbx {opMap.get(self.operator)} rax", file = file)
         else: print(f"rbx{opMap.get(self.operator)}", file = file)

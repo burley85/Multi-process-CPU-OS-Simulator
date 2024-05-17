@@ -39,10 +39,10 @@ class MethodHeader(ASTNode):
     def compile(self, compiler : Compiler, file, withComments = False):
         if withComments: print(f";{self}", file = file)
 
-        parameterStackOffset = -8
+        parameterStackOffset = -16
         for parameter in reversed(self.parameterList):
-            parameterStackOffset -= parameter.size
             parameter.stackOffset = parameterStackOffset
+            parameterStackOffset -= parameter.size
             compiler.addDeclaration(parameter)
         print(f"_{self.identifier}:\n", file=file, end = "")
         

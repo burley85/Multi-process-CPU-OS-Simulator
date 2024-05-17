@@ -42,11 +42,7 @@ class Call(ASTNode):
             #Load arg
             argument.compile(compiler, file, withComments)
             #Push arg onto stack
-            if parameter.size < 8:
-                print(f"rax * {2**((8 - parameter.size) * 8)}", file = file)
-                print("push rax", file = file)
-                print(f"rsp + {8 - parameter.size}", file = file)
-            else: print("push rax", file = file)
+            print(Compiler.pushValCode("rax", parameter.size), file = file)
         #jump to method
         print(f"call _{self.identifier}", file = file)
         #Clean up stack

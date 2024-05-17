@@ -93,10 +93,19 @@ class Compiler:
 
     @classmethod
     def loadVarCode(cls, register, decl):
-        s = f"{register} = rbp\n"
-        s += f"{register} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
-        s += f"{register} = ({register})\n"
-        s += f"{register} / {2 ** (64 - (decl.size * 8))}"
+        s = f";Loading {decl.identifier} from {decl.stackOffset} into {register}\n"
+        if decl.size == 8: 
+            offset = decl.stackOffset
+            s += f"{register} = rbp\n"
+            s += f"{register} {'-' if offset > 0 else '+'} {abs(offset)}\n"
+            s += f"{register} = ({register})\n"
+        else:
+            offset = decl.stackOffset + decl.size
+            s += f"{register} = rbp\n"
+            if offset != 0: s += f"{register} {'-' if offset > 0 else '+'} {abs(offset)}\n"
+            s += f"{register} = ({register})\n"
+            s += f"{register} / {2 ** (64 - (decl.size * 8))} ;Isolate first {decl.size} bytes\n"
+        s += f";{register} = {decl.identifier}\n"
         return s
     
     @classmethod
@@ -108,13 +117,29 @@ class Compiler:
         return s
     
     @classmethod
+    def pushValCode(cls, register, size : int):
+        assert size > 0 and size <= 8
+        if size == 8: s = f"push {register}\n"
+        else:
+            s = f"{register} * {2 ** (64 - (size * 8))}\n"
+            s += "push rax\n"
+            s += f"rsp + {8 - size}\n"
+        return s
+
+    @classmethod
     def storeVarCode(cls, valueRegister, tempRegister1, tempRegister2, decl):
-        varBits = decl.size * 8
-        ptrRegister = tempRegister1
-        maskedValue = tempRegister2
-        s = f"{ptrRegister} = rbp\n"
-        s += f"{ptrRegister} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
-        if(decl.size < 8):
+        s = ""
+        if decl.size == 8:
+            s += f"{ptrRegister} = rbp\n"
+            s += f"{ptrRegister} {'-' if decl.stackOffset > 0 else '+'} {abs(decl.stackOffset)}\n"
+            s += f"({ptrRegister}) = {valueRegister}"
+        else:
+            varBits = decl.size * 8
+            ptrRegister = tempRegister1
+            maskedValue = tempRegister2
+            offset = decl.stackOffset + decl.size
+            s += f"{ptrRegister} = rbp\n"
+            s += f"{ptrRegister} {'-' if offset > 0 else '+'} {abs(offset)}\n"
             #Isolate last 64 - varBits bits of original value
             s += f"{maskedValue} = ({ptrRegister})\n"
             s += f"{maskedValue} * {2**varBits}\n"
@@ -123,8 +148,7 @@ class Compiler:
             s += f"{valueRegister} * {2 ** (64 - varBits)}\n"
             #Combine last 64 - varBits bits of original value with first varBits bits of valueRegister
             s += f"{valueRegister} + {maskedValue}\n"
-
-        s += f"({ptrRegister}) = {valueRegister}\n"
+            s += f"({ptrRegister}) = {valueRegister}\n"
         return s
 
     @classmethod
