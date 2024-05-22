@@ -62,15 +62,16 @@ class Assignment(ASTNode):
         decl = compiler.findDeclaration(self.lValueID)
 
         #Load lvalue
-        print(Compiler.loadVarCode("rbx", decl), file = file)
-        if self.derefLValue: print(Compiler.derefVarCode("rbx", decl), file = file)
+        if self.derefLValue: print(Compiler.loadDerefVarCode("rbx", decl), file = file)
+        else: print(Compiler.loadVarCode("rbx", decl), file = file)
 
         #Calculate
         if(self.expression != None): print(f"rbx {opMap.get(self.operator)} rax", file = file)
         else: print(f"rbx{opMap.get(self.operator)}", file = file)
 
         #Write to lvalue
-        print(Compiler.storeVarCode("rbx", "rcx", "rdx", decl), file = file)
+        if self.derefLValue: print(Compiler.storeDerefVarCode("rbx", "rcx", "rdx", decl), file = file)
+        else: print(Compiler.storeVarCode("rbx", "rcx", "rdx", decl), file = file)
 
     @classmethod
     def createRandom(cls, context):

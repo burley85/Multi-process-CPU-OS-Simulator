@@ -60,7 +60,7 @@ class Expression(ASTNode):
             print(Compiler.addrOfVarCode("rax", decl), file = file)
         elif self.unaryOperator == TokenType.DEREF:
             decl = compiler.findDeclaration(self.child.value)
-            print(Compiler.derefVarCode("rax", decl), file = file)
+            print(Compiler.loadDerefVarCode("rax", decl), file = file)
         elif self.unaryOperator == TokenType.SIZEOF:
             decl = compiler.findDeclaration(self.child.value)
             print(f"rax = {decl.size}", file = file)
